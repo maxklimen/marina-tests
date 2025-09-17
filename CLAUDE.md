@@ -37,8 +37,35 @@ This is a QA testing repository for sitemap URL validation and redirect manageme
 └── CLAUDE.md            # This file
 ```
 
+## CSV Data Analysis
+Based on analysis of `in/Psychics.csv`:
+- **Total URLs with 301 redirects**: 492 entries
+- **URLs marked for removal**: 2 entries (marked as "REMOVE" in Expected URL column)
+- **Key columns**:
+  - Column 1: `Original Url` - URLs currently in sitemap
+  - Column 4: `Status Code` - HTTP response codes (filter for 301)
+  - Column 61: `Expected URL` - Target URLs for redirects or "REMOVE"
+
+## Testing Workflow
+1. **Parse CSV**: Filter 301 status codes from `in/Psychics.csv`
+2. **Test Expected URLs**: Verify each Expected URL returns 200 in QA environment
+3. **Validate Removals**: Check URLs marked "REMOVE" are inaccessible
+4. **Sitemap Comparison**: Fetch and compare actual sitemap against expected state
+5. **Generate Reports**: Create transparent output with pass/fail results
+
+## Commands
+- **Run QA Tests**: `python test_sitemap_qa.py`
+- **Check Dependencies**: `pip install -r requirements.txt`
+- **View Results**: Check `output/` directory for reports
+
+## Output Files
+- `output/test_results_YYYY-MM-DD.csv` - Failed URLs for Excel review
+- `output/test_report_YYYY-MM-DD.html` - Comprehensive HTML report
+- Console output with real-time progress and colored results
+
 ## Development Notes
-- Focus on URL testing and validation scripts
-- Implement environment switching capability (prod vs QA)
+- Focus on transparent, user-friendly output for non-technical users
+- QA environment testing with "qa-" prefix (qa-www.californiapsychics.com)
 - Design for scalability to handle multiple CSV input files
 - Target sitemap: `www.californiapsychics.com/sitemap.xml`
+- Built to eliminate manual URL checking work
