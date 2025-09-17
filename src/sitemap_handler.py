@@ -6,6 +6,10 @@ Key QA Environment Considerations:
 - QA sitemap contains URLs with qa-www prefix (e.g., qa-www.californiapsychics.com)
 - Test data contains production URLs (e.g., www.californiapsychics.com)
 - URL normalization handles qa-www -> www conversion for proper comparison
+
+IMPORTANT NOTE: Manual review identified discrepancies in QA sitemap requiring attention.
+Current 4.7% compliance rate indicates systematic sitemap updates needed.
+See sitemap-qa.md for detailed action items for next session.
 """
 import requests
 import xml.etree.ElementTree as ET

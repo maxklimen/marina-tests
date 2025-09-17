@@ -35,3 +35,17 @@ Psychics Sitemap
 - **URL Accessibility**: Tests that expected URLs return 200 status
 - **Sitemap Compliance**: Verifies expected URLs are IN sitemap AND original URLs are REMOVED
 - **Overall Success**: Both criteria must pass for complete validation
+
+### ⚠️ Manual Sitemap Review Required (Next Session)
+**Important Finding**: Manual comparison of https://qa-www.californiapsychics.com/sitemap.xml reveals discrepancies that need attention:
+- Some expected URLs may not be present in the QA sitemap
+- Some original URLs may still be present and need removal
+- Current 4.7% sitemap compliance rate suggests systematic sitemap updates needed
+- Tool is working correctly - discrepancies indicate actual sitemap maintenance required
+
+**Action Items for Next Session:**
+1. Detailed manual review of QA sitemap content
+2. Compare against CSV test data expectations
+3. Identify specific URLs needing addition/removal
+4. Plan sitemap update strategy for QA environment
+5. Verify tool accuracy against manual findings
