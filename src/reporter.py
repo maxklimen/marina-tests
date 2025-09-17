@@ -70,6 +70,62 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         if result.get('redirect_chain'):
             print(f"        Redirects: {' → '.join(map(str, result['redirect_chain']))}")
 
+    def print_url_test_result_enhanced(self, result: Dict, test_number: int, total_tests: int):
+        """Print enhanced URL test result with dual criteria."""
+        if not Config.VERBOSE:
+            return
+
+        url_display = result.get('url', 'Unknown URL')
+        response_time = result.get('response_time', 0)
+        status_code = result.get('status_code', 'N/A')
+
+        # URL accessibility status
+        url_accessible = result.get('url_accessible', False)
+        url_symbol = "✅" if url_accessible else "❌"
+        url_status = "200 OK" if url_accessible else f"{status_code} FAIL"
+
+        # Sitemap compliance status
+        sitemap_compliant = result.get('sitemap_compliant', False)
+        sitemap_symbol = "✅" if sitemap_compliant else "❌"
+
+        expected_in_sitemap = result.get('expected_in_sitemap', False)
+        original_removed = result.get('original_removed', False)
+
+        if expected_in_sitemap and original_removed:
+            sitemap_status = "In sitemap, original removed"
+        elif expected_in_sitemap:
+            sitemap_status = "In sitemap, original still present"
+        elif original_removed:
+            sitemap_status = "Not in sitemap, original removed"
+        else:
+            sitemap_status = "Not in sitemap, original still present"
+
+        # Overall status
+        overall_success = result.get('success', False)
+        overall_symbol = "✅" if overall_success else "❌"
+        overall_status = "PASS" if overall_success else "FAIL"
+
+        # Color coding
+        if self.enable_colors:
+            success_color = Fore.GREEN
+            fail_color = Fore.RED
+            url_color = success_color if url_accessible else fail_color
+            sitemap_color = success_color if sitemap_compliant else fail_color
+            overall_color = success_color if overall_success else fail_color
+        else:
+            url_color = sitemap_color = overall_color = ""
+
+        print(f"[{test_number}/{total_tests}] {url_display}")
+        print(f"        URL: {url_symbol} {url_color}{url_status}{Style.RESET_ALL} ({response_time}s)")
+        print(f"        Sitemap: {sitemap_symbol} {sitemap_color}{sitemap_status}{Style.RESET_ALL}")
+        print(f"        Overall: {overall_symbol} {overall_color}{overall_status}{Style.RESET_ALL}")
+
+        if result.get('error'):
+            print(f"        Error: {Fore.RED}{result['error']}{Style.RESET_ALL}")
+
+        if result.get('redirect_chain'):
+            print(f"        Redirects: {' → '.join(map(str, result['redirect_chain']))}")
+
     def print_progress_bar(self, current: int, total: int, description: str = ""):
         """Print progress bar for long operations."""
         if Config.SHOW_PROGRESS and total > 1:
@@ -89,21 +145,40 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
     def print_summary(self, redirect_results: List[Dict], remove_results: List[Dict],
                      sitemap_analysis: Dict = None):
-        """Print comprehensive test summary."""
+        """Print comprehensive test summary with dual criteria."""
         print(f"\n{'='*60}")
         print("📊 TEST SUMMARY")
         print(f"{'='*60}")
 
-        # Redirect URL testing summary
+        # Enhanced redirect URL testing summary
         if redirect_results:
             total_redirects = len(redirect_results)
-            passed_redirects = sum(1 for r in redirect_results if r['success'])
-            failed_redirects = total_redirects - passed_redirects
 
-            print(f"\n🔄 Redirect URL Testing:")
-            print(f"  ✅ Passed: {passed_redirects}/{total_redirects} ({(passed_redirects/total_redirects)*100:.1f}%)")
-            if failed_redirects > 0:
-                print(f"  ❌ Failed: {failed_redirects}/{total_redirects} ({(failed_redirects/total_redirects)*100:.1f}%)")
+            # Separate success criteria
+            url_accessible = sum(1 for r in redirect_results if r.get('url_accessible', False))
+            sitemap_compliant = sum(1 for r in redirect_results if r.get('sitemap_compliant', False))
+            overall_success = sum(1 for r in redirect_results if r['success'])
+
+            expected_in_sitemap = sum(1 for r in redirect_results if r.get('expected_in_sitemap', False))
+            original_removed = sum(1 for r in redirect_results if r.get('original_removed', False))
+
+            print(f"\n🔄 Redirect URL Testing ({total_redirects} URLs):")
+            print(f"  📱 URL Accessibility:     {url_accessible}/{total_redirects} ({(url_accessible/total_redirects)*100:.1f}%)")
+            print(f"  🗺️  Sitemap Compliance:    {sitemap_compliant}/{total_redirects} ({(sitemap_compliant/total_redirects)*100:.1f}%)")
+            print(f"  ✅ Overall Success:       {overall_success}/{total_redirects} ({(overall_success/total_redirects)*100:.1f}%)")
+
+            print(f"\n🔍 Sitemap Details:")
+            print(f"  ✅ Expected URLs in sitemap:   {expected_in_sitemap}/{total_redirects}")
+            print(f"  ✅ Original URLs removed:      {original_removed}/{total_redirects}")
+
+            if overall_success < total_redirects:
+                failed_accessibility = total_redirects - url_accessible
+                failed_sitemap = total_redirects - sitemap_compliant
+                print(f"\n⚠️  Issues Found:")
+                if failed_accessibility > 0:
+                    print(f"  ❌ URLs not accessible: {failed_accessibility}")
+                if failed_sitemap > 0:
+                    print(f"  ❌ Sitemap non-compliant: {failed_sitemap}")
 
         # Remove URL testing summary
         if remove_results:
@@ -150,19 +225,21 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         print(f"\n{'='*60}")
 
     def save_csv_results(self, redirect_results: List[Dict], remove_results: List[Dict]) -> str:
-        """Save test results to CSV file."""
+        """Save enhanced test results to CSV file with dual criteria."""
         csv_path = Config.get_results_csv_path()
 
         try:
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
                 fieldnames = [
                     'test_type', 'original_url', 'expected_url', 'tested_url',
-                    'status_code', 'response_time', 'success', 'error', 'redirect_chain'
+                    'status_code', 'response_time',
+                    'url_accessible', 'expected_in_sitemap', 'original_removed', 'sitemap_compliant',
+                    'overall_success', 'error', 'redirect_chain'
                 ]
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
 
-                # Write redirect results
+                # Write enhanced redirect results
                 for result in redirect_results:
                     writer.writerow({
                         'test_type': 'redirect',
@@ -171,7 +248,11 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'tested_url': result.get('full_url', ''),
                         'status_code': result.get('status_code', ''),
                         'response_time': result.get('response_time', ''),
-                        'success': result.get('success', False),
+                        'url_accessible': result.get('url_accessible', False),
+                        'expected_in_sitemap': result.get('expected_in_sitemap', False),
+                        'original_removed': result.get('original_removed', False),
+                        'sitemap_compliant': result.get('sitemap_compliant', False),
+                        'overall_success': result.get('success', False),
                         'error': result.get('error', ''),
                         'redirect_chain': ','.join(map(str, result.get('redirect_chain', [])))
                     })
@@ -185,7 +266,11 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'tested_url': result.get('full_url', ''),
                         'status_code': result.get('status_code', ''),
                         'response_time': result.get('response_time', ''),
-                        'success': result.get('success', False),
+                        'url_accessible': 'N/A',
+                        'expected_in_sitemap': 'N/A',
+                        'original_removed': not result.get('success', True),  # Should be removed
+                        'sitemap_compliant': result.get('success', False),
+                        'overall_success': result.get('success', False),
                         'error': result.get('error', ''),
                         'redirect_chain': ','.join(map(str, result.get('redirect_chain', [])))
                     })
@@ -203,9 +288,11 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         html_path = Config.get_report_html_path()
 
         try:
-            # Calculate statistics
+            # Calculate enhanced statistics
             total_redirects = len(redirect_results)
-            passed_redirects = sum(1 for r in redirect_results if r['success'])
+            url_accessible = sum(1 for r in redirect_results if r.get('url_accessible', False))
+            sitemap_compliant = sum(1 for r in redirect_results if r.get('sitemap_compliant', False))
+            overall_success = sum(1 for r in redirect_results if r['success'])
             total_removes = len(remove_results)
             passed_removes = sum(1 for r in remove_results if r['success'])
 
@@ -219,63 +306,91 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         .container {{ background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
         .header {{ text-align: center; color: #333; border-bottom: 2px solid #007acc; padding-bottom: 20px; }}
         .stats {{ display: flex; justify-content: space-around; margin: 30px 0; }}
-        .stat-box {{ text-align: center; padding: 20px; background-color: #f8f9fa; border-radius: 5px; }}
-        .stat-number {{ font-size: 2em; font-weight: bold; color: #007acc; }}
+        .stat-box {{ text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 5px; min-width: 120px; }}
+        .stat-number {{ font-size: 1.8em; font-weight: bold; color: #007acc; }}
         .success {{ color: #28a745; }}
         .failure {{ color: #dc3545; }}
+        .warning {{ color: #ffc107; }}
         table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
         th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
         th {{ background-color: #007acc; color: white; }}
         .pass {{ background-color: #d4edda; }}
         .fail {{ background-color: #f8d7da; }}
+        .partial {{ background-color: #fff3cd; }}
         .section {{ margin: 30px 0; }}
         .timestamp {{ color: #666; font-size: 0.9em; }}
+        .criteria-section {{ background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔍 California Psychics - QA Sitemap Test Report</h1>
+            <h1>🔍 California Psychics - Enhanced QA Sitemap Report</h1>
             <p class="timestamp">Generated on {datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}</p>
             <p>Environment: <strong>{Config.CURRENT_ENV.upper()}</strong> ({Config.get_base_url()})</p>
         </div>
 
-        <div class="stats">
-            <div class="stat-box">
-                <div class="stat-number success">{passed_redirects}</div>
-                <div>Redirects Passed</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number failure">{total_redirects - passed_redirects}</div>
-                <div>Redirects Failed</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number success">{passed_removes}</div>
-                <div>URLs Removed</div>
-            </div>
-            <div class="stat-box">
-                <div class="stat-number failure">{total_removes - passed_removes}</div>
-                <div>Remove Failed</div>
+        <div class="criteria-section">
+            <h2>📊 Dual Success Criteria Results</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number success">{url_accessible}</div>
+                    <div>URLs Accessible</div>
+                    <div style="font-size: 0.8em;">({(url_accessible/total_redirects)*100:.1f}%)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number {'success' if sitemap_compliant == total_redirects else 'failure'}">{sitemap_compliant}</div>
+                    <div>Sitemap Compliant</div>
+                    <div style="font-size: 0.8em;">({(sitemap_compliant/total_redirects)*100:.1f}%)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number {'success' if overall_success == total_redirects else 'failure'}">{overall_success}</div>
+                    <div>Overall Success</div>
+                    <div style="font-size: 0.8em;">({(overall_success/total_redirects)*100:.1f}%)</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number {'success' if passed_removes == total_removes else 'failure'}">{passed_removes}</div>
+                    <div>URLs Removed</div>
+                    <div style="font-size: 0.8em;">({total_removes} total)</div>
+                </div>
             </div>
         </div>
 
         <div class="section">
-            <h2>🔄 Redirect URL Testing Results</h2>
+            <h2>🔄 Enhanced Redirect URL Testing Results</h2>
             <table>
                 <tr>
                     <th>Original URL</th>
                     <th>Expected URL</th>
                     <th>Status Code</th>
                     <th>Response Time</th>
-                    <th>Result</th>
+                    <th>URL Access</th>
+                    <th>In Sitemap</th>
+                    <th>Original Removed</th>
+                    <th>Overall Result</th>
                     <th>Error</th>
                 </tr>
 """
 
-            # Add redirect results
+            # Add enhanced redirect results
             for result in redirect_results:
-                row_class = "pass" if result['success'] else "fail"
-                result_text = "✅ PASS" if result['success'] else "❌ FAIL"
+                url_accessible = result.get('url_accessible', False)
+                expected_in_sitemap = result.get('expected_in_sitemap', False)
+                original_removed = result.get('original_removed', False)
+                sitemap_compliant = result.get('sitemap_compliant', False)
+                overall_success = result.get('success', False)
+
+                if overall_success:
+                    row_class = "pass"
+                elif url_accessible and not sitemap_compliant:
+                    row_class = "partial"
+                else:
+                    row_class = "fail"
+
+                url_result = "✅ 200" if url_accessible else f"❌ {result.get('status_code', 'FAIL')}"
+                sitemap_result = "✅ Yes" if expected_in_sitemap else "❌ No"
+                removed_result = "✅ Yes" if original_removed else "❌ No"
+                overall_result = "✅ PASS" if overall_success else "❌ FAIL"
 
                 html_content += f"""
                 <tr class="{row_class}">
@@ -283,7 +398,10 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                     <td>{result.get('url', '')}</td>
                     <td>{result.get('status_code', 'N/A')}</td>
                     <td>{result.get('response_time', 0):.3f}s</td>
-                    <td>{result_text}</td>
+                    <td>{url_result}</td>
+                    <td>{sitemap_result}</td>
+                    <td>{removed_result}</td>
+                    <td>{overall_result}</td>
                     <td>{result.get('error', '')}</td>
                 </tr>
 """

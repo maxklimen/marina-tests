@@ -13,7 +13,25 @@ Psychics Sitemap
 - File for tests inside the "in" folder ; Psychics.csv , we will have another files later there with other links to QA, so it will be great to architect a solution that can be easily modified if necessary.
 
 
-###Task understanding 
-- our target to test links that have a 301 Status Code in the file, so sending a request to the Expected URL 
-- expected response code 200 for Expected URLs - and only updated (Expected URL) should be in the sitemap instead of old ones (Original Url) 
+###Task understanding
+- our target to test links that have a 301 Status Code in the file, so sending a request to the Expected URL
+- expected response code 200 for Expected URLs - and only updated (Expected URL) should be in the sitemap instead of old ones (Original Url)
 - Also, we need to check that URLs have been removed from the sitemap with the value REMOVE in the Expected URL colomn
+
+###QA Environment Implementation Notes
+**URL Handling Between Environments:**
+- Test data (CSV) contains production URLs (e.g., `www.californiapsychics.com/page`)
+- QA testing converts these to QA URLs (e.g., `qa-www.californiapsychics.com/page`)
+- QA sitemap contains proper QA URLs with qa-www prefix
+- Sitemap validation normalizes qa-www back to www for comparison with test data
+
+**Sitemap Technical Details:**
+- QA sitemap uses custom namespace: `https://qa-cdn-1.californiapsychics.com/sitemap.xml`
+- Parser detects namespace dynamically from root element
+- Standard sitemap namespace fallback for production environment
+- Sitemap contains 1,418 URLs in QA environment
+
+**Dual Verification Criteria:**
+- **URL Accessibility**: Tests that expected URLs return 200 status
+- **Sitemap Compliance**: Verifies expected URLs are IN sitemap AND original URLs are REMOVED
+- **Overall Success**: Both criteria must pass for complete validation

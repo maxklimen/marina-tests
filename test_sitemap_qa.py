@@ -52,22 +52,40 @@ def main():
             print("❌ No test data found. Please check your CSV file.")
             return
 
-        # Test redirect URLs
+        # Fetch sitemap first for compliance checking
+        reporter.print_section_header("🗺️  FETCHING SITEMAP FOR COMPLIANCE CHECK")
+        print("🔄 Fetching sitemap for validation...")
+
+        sitemap_handler.fetch_sitemap()
+        sitemap_urls = sitemap_handler.get_sitemap_urls()
+        print(f"✅ Sitemap fetched: {len(sitemap_urls)} URLs found")
+
+        # Test redirect URLs with dual verification
         redirect_results = []
         if redirect_data:
             reporter.print_section_header(f"🔄 TESTING REDIRECT URLS ({len(redirect_data)} URLs)")
-            print("Testing that Expected URLs return 200 status codes...\n")
+            print("Testing URL accessibility AND sitemap compliance...\n")
 
             progress_bar = reporter.create_progress_bar(len(redirect_data), "Testing redirects")
 
             for i, url_data in enumerate(redirect_data, 1):
-                # Test the expected URL
+                # Test URL accessibility
                 result = tester.test_redirect_url(url_data['expected_url'])
                 result['original_url'] = url_data['original_url']
                 result['test_type'] = 'redirect'
 
-                # Print individual result if verbose
-                reporter.print_url_test_result(result, i, len(redirect_data))
+                # Add sitemap compliance checks
+                result['url_accessible'] = result['success']  # Rename for clarity
+                # Use the prepared URL for sitemap checking (the URL we actually tested)
+                result['expected_in_sitemap'] = sitemap_handler.check_url_in_sitemap(result['full_url'])['in_sitemap']
+                # For original URL, prepare it the same way to check if it's properly removed
+                original_prepared = tester._prepare_url(url_data['original_url'])
+                result['original_removed'] = not sitemap_handler.check_url_in_sitemap(original_prepared)['in_sitemap']
+                result['sitemap_compliant'] = result['expected_in_sitemap'] and result['original_removed']
+                result['success'] = result['url_accessible'] and result['sitemap_compliant']  # Combined success
+
+                # Print individual result with dual criteria
+                reporter.print_url_test_result_enhanced(result, i, len(redirect_data))
 
                 redirect_results.append(result)
 

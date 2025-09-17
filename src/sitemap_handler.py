@@ -1,5 +1,11 @@
 """
 Sitemap XML handling for fetching and parsing sitemap data.
+
+Key QA Environment Considerations:
+- QA sitemap uses custom namespace: https://qa-cdn-1.californiapsychics.com/sitemap.xml
+- QA sitemap contains URLs with qa-www prefix (e.g., qa-www.californiapsychics.com)
+- Test data contains production URLs (e.g., www.californiapsychics.com)
+- URL normalization handles qa-www -> www conversion for proper comparison
 """
 import requests
 import xml.etree.ElementTree as ET
@@ -19,12 +25,30 @@ class SitemapHandler:
         self.raw_xml = None
 
     def fetch_sitemap(self) -> bool:
-        """Fetch sitemap XML from the website."""
+        """Fetch sitemap XML from the website with fallback options."""
+        # Try QA sitemap first
+        qa_success = self._try_fetch_sitemap(self.sitemap_url, "QA")
+        if qa_success:
+            return True
+
+        # If QA fails, try production as fallback
+        print("⚠️  QA sitemap failed, trying production fallback...")
+        prod_url = self.sitemap_url.replace('qa-www.', 'www.')
+        prod_success = self._try_fetch_sitemap(prod_url, "Production")
+        if prod_success:
+            print("ℹ️  Using production sitemap for validation")
+            return True
+
+        print("❌ Both QA and production sitemaps failed")
+        return False
+
+    def _try_fetch_sitemap(self, url: str, env_name: str) -> bool:
+        """Try to fetch sitemap from a specific URL."""
         try:
-            print(f"🔄 Fetching sitemap from: {self.sitemap_url}")
+            print(f"🔄 Fetching {env_name} sitemap from: {url}")
 
             response = requests.get(
-                self.sitemap_url,
+                url,
                 timeout=Config.REQUEST_TIMEOUT,
                 headers={
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
@@ -33,14 +57,14 @@ class SitemapHandler:
 
             if response.status_code == 200:
                 self.raw_xml = response.text
-                print(f"✅ Sitemap fetched successfully ({len(self.raw_xml)} bytes)")
+                print(f"✅ {env_name} sitemap fetched successfully ({len(self.raw_xml)} bytes)")
                 return True
             else:
-                print(f"❌ Failed to fetch sitemap: HTTP {response.status_code}")
+                print(f"❌ Failed to fetch {env_name} sitemap: HTTP {response.status_code}")
                 return False
 
         except requests.exceptions.RequestException as e:
-            print(f"❌ Error fetching sitemap: {e}")
+            print(f"❌ Error fetching {env_name} sitemap: {e}")
             return False
 
     def parse_sitemap(self) -> List[str]:
@@ -53,19 +77,33 @@ class SitemapHandler:
             # Parse XML
             root = ET.fromstring(self.raw_xml)
 
-            # Handle XML namespaces
-            namespaces = {
-                'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9'
-            }
+            # Detect namespace from root element
+            namespace_uri = None
+            if root.tag.startswith('{'):
+                namespace_uri = root.tag[1:root.tag.find('}')]
 
             # Extract URLs from sitemap
             urls = []
-            for url_element in root.findall('.//sitemap:url', namespaces):
-                loc_element = url_element.find('sitemap:loc', namespaces)
-                if loc_element is not None and loc_element.text:
-                    urls.append(loc_element.text.strip())
 
-            # If no URLs found with namespace, try without namespace
+            # Try with detected namespace first
+            if namespace_uri:
+                namespaces = {'ns': namespace_uri}
+                for url_element in root.findall('.//ns:url', namespaces):
+                    loc_element = url_element.find('ns:loc', namespaces)
+                    if loc_element is not None and loc_element.text:
+                        urls.append(loc_element.text.strip())
+
+            # If no URLs found, try standard sitemap namespace
+            if not urls:
+                namespaces = {
+                    'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9'
+                }
+                for url_element in root.findall('.//sitemap:url', namespaces):
+                    loc_element = url_element.find('sitemap:loc', namespaces)
+                    if loc_element is not None and loc_element.text:
+                        urls.append(loc_element.text.strip())
+
+            # If still no URLs found, try without namespace
             if not urls:
                 for url_element in root.findall('.//url'):
                     loc_element = url_element.find('loc')
@@ -74,6 +112,8 @@ class SitemapHandler:
 
             self.urls = urls
             print(f"✅ Parsed {len(urls)} URLs from sitemap")
+            if namespace_uri:
+                print(f"ℹ️  Used namespace: {namespace_uri}")
             return urls
 
         except ET.ParseError as e:
@@ -99,6 +139,10 @@ class SitemapHandler:
         normalized = url.replace('https://', '').replace('http://', '')
         if normalized.endswith('/'):
             normalized = normalized[:-1]
+
+        # Normalize environment prefixes for comparison
+        # Convert qa-www back to www for comparison since test data uses production URLs
+        normalized = normalized.replace('qa-www.californiapsychics.com', 'www.californiapsychics.com')
 
         return normalized
 

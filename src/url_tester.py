@@ -128,21 +128,30 @@ class URLTester:
         if not url:
             return ""
 
-        # Handle external URLs
-        if url.startswith('help.californiapsychics.com') or 'californiapsychics.com' in url:
+        # Handle external URLs (help subdomain)
+        if url.startswith('help.californiapsychics.com'):
             if not url.startswith('http'):
                 return f'https://{url}'
             return url
+
+        # Handle URLs that already have protocol
+        if url.startswith('http'):
+            return url
+
+        # Handle URLs with full domain - need to add QA prefix if in QA environment
+        if url.startswith('www.californiapsychics.com'):
+            if self.environment == 'QA':
+                # Replace www with qa-www for QA testing
+                qa_url = url.replace('www.californiapsychics.com', 'qa-www.californiapsychics.com')
+                return f'https://{qa_url}'
+            else:
+                return f'https://{url}'
 
         # Handle relative URLs
         if url.startswith('/'):
             return f'{self.base_url}{url}'
 
-        # Handle URLs that already include domain
-        if url.startswith('www.californiapsychics.com'):
-            return f'https://{url}'
-
-        # Default case - assume it's a path
+        # Default case - assume it's a path, use base_url which already has the right environment
         return f'{self.base_url}/{url.lstrip("/")}'
 
     def _make_request_with_retry(self, url: str) -> requests.Response:
