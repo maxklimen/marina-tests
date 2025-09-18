@@ -288,6 +288,44 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"❌ Error saving CSV results: {e}")
             return ""
 
+    def _generate_failure_details(self, result: Dict) -> str:
+        """Generate detailed failure description for failed tests."""
+        details = []
+        test_type = result.get('test_type', 'unknown')
+
+        if test_type == 'redirect':
+            url_accessible = result.get('url_accessible', False)
+            expected_in_sitemap = result.get('expected_in_sitemap', False)
+            original_removed = result.get('original_removed', False)
+
+            if not url_accessible:
+                status_code = result.get('status_code', 'N/A')
+                details.append(f'<span class="badge bg-danger">URL Not Accessible</span> ({status_code})')
+
+            if not expected_in_sitemap:
+                details.append('<span class="badge bg-warning">Missing from Sitemap</span>')
+
+            if not original_removed:
+                details.append('<span class="badge bg-warning">Original URL Still in Sitemap</span>')
+
+            if result.get('error'):
+                details.append(f'<span class="badge bg-secondary">Error</span> {result.get("error")}')
+
+        elif test_type == 'remove':
+            url_inaccessible = result.get('url_inaccessible', False)
+            removed_from_sitemap = result.get('removed_from_sitemap', False)
+
+            if not url_inaccessible:
+                details.append('<span class="badge bg-danger">URL Still Accessible</span>')
+
+            if not removed_from_sitemap:
+                details.append('<span class="badge bg-warning">Still in Sitemap</span>')
+
+            if result.get('error'):
+                details.append(f'<span class="badge bg-secondary">Error</span> {result.get("error")}')
+
+        return '<div class="failure-details">' + '<br>'.join(details) + '</div>' if details else 'Unknown failure'
+
     def save_html_report(self, redirect_results: List[Dict], remove_results: List[Dict],
                         sitemap_analysis: Dict = None) -> str:
         """Save comprehensive HTML report."""
@@ -316,11 +354,13 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     <title>California Psychics Sitemap QA Report</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/fixedheader/3.4.0/css/fixedHeader.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/fixedheader/3.4.0/js/dataTables.fixedHeader.min.js"></script>
     <style>
         .status-pass {{ background-color: #d1edff !important; }}
         .status-fail {{ background-color: #f8d7da !important; }}
@@ -328,10 +368,33 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         .nav-tabs .nav-link.active {{ font-weight: bold; border-bottom: 3px solid #0d6efd; background: white; }}
         .metric-value {{ font-size: 2rem; font-weight: bold; }}
         .metric-label {{ font-size: 0.875rem; color: #6c757d; }}
-        .table-responsive {{ max-height: 75vh; }}
+        .table-responsive {{ max-height: 70vh; }}
         .nav-tabs {{ border-bottom: 2px solid #dee2e6; }}
         .nav-tabs .nav-link {{ border: none; padding: 1rem 1.5rem; font-weight: 500; }}
         .tab-content {{ background: white; border-radius: 0 0 0.375rem 0.375rem; }}
+        /* Fixed header styling */
+        .dataTables_scrollHead {{
+            background: white;
+            border-bottom: 2px solid #dee2e6;
+        }}
+        .dataTables_scrollHeadInner table thead th {{
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }}
+        /* Fallback sticky headers */
+        .sticky-header th {{
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 10;
+            border-bottom: 2px solid #dee2e6;
+        }}
+        .failure-details {{
+            font-size: 0.85rem;
+            line-height: 1.3;
+        }}
     </style>
 </head>
 <body class="bg-light">
@@ -620,7 +683,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                                 <th>Test Type</th>
                                 <th>Status Code</th>
                                 <th>Response Time</th>
-                                <th>Error</th>
+                                <th>Failure Details</th>
                                 <th>Expected URL</th>
                             </tr>
                         </thead>
@@ -631,6 +694,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             for result in failed_results:
                 test_type = result.get('test_type', 'unknown')
                 type_badge = f'<span class="badge bg-info">{test_type.upper()}</span>'
+                failure_details = self._generate_failure_details(result)
 
                 html_content += f"""
                                 <tr class="status-fail">
@@ -638,7 +702,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                                     <td>{type_badge}</td>
                                     <td><span class="badge bg-danger">{result.get('status_code', 'N/A')}</span></td>
                                     <td>{result.get('response_time', 0):.3f}s</td>
-                                    <td><small>{result.get('error', '')}</small></td>
+                                    <td>{failure_details}</td>
                                     <td><small>{result.get('expected_url', result.get('url', ''))}</small></td>
                                 </tr>"""
 
@@ -652,12 +716,15 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
     <script>
         $(document).ready(function() {{
-            // Initialize DataTables with enhanced features
+            // Initialize DataTables with enhanced features and fixed headers
             const tableConfig = {{
                 responsive: true,
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 order: [[0, 'asc']],
+                fixedHeader: true,
+                scrollY: '60vh',
+                scrollCollapse: true,
                 columnDefs: [
                     {{ targets: '_all', className: 'text-nowrap' }}
                 ],
