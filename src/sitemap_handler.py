@@ -134,30 +134,35 @@ class SitemapHandler:
             self.parse_sitemap()
         return self.urls
 
-    def normalize_url_for_comparison(self, url: str) -> str:
+    def normalize_url_for_comparison(self, url: str, preserve_trailing_slash: bool = False) -> str:
         """Normalize URL for comparison purposes."""
         if not url:
             return ""
 
-        # Remove protocol and trailing slash
+        # Remove protocol
         normalized = url.replace('https://', '').replace('http://', '')
-        if normalized.endswith('/'):
+
+        # Handle trailing slash (preserve if requested for distinguishing between similar URLs)
+        if not preserve_trailing_slash and normalized.endswith('/'):
             normalized = normalized[:-1]
 
         # Normalize environment prefixes for comparison
         # Convert qa-www back to www for comparison since test data uses production URLs
         normalized = normalized.replace('qa-www.californiapsychics.com', 'www.californiapsychics.com')
 
+        # Convert to lowercase for case-insensitive comparison
+        normalized = normalized.lower()
+
         return normalized
 
-    def check_url_in_sitemap(self, test_url: str) -> Dict:
+    def check_url_in_sitemap(self, test_url: str, preserve_trailing_slash: bool = False) -> Dict:
         """Check if a URL exists in the sitemap."""
         sitemap_urls = self.get_sitemap_urls()
-        normalized_test_url = self.normalize_url_for_comparison(test_url)
+        normalized_test_url = self.normalize_url_for_comparison(test_url, preserve_trailing_slash)
 
         # Normalize all sitemap URLs for comparison
         normalized_sitemap_urls = [
-            self.normalize_url_for_comparison(url) for url in sitemap_urls
+            self.normalize_url_for_comparison(url, preserve_trailing_slash) for url in sitemap_urls
         ]
 
         is_present = normalized_test_url in normalized_sitemap_urls

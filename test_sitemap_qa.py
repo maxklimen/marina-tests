@@ -79,8 +79,9 @@ def main():
                 # Use the prepared URL for sitemap checking (the URL we actually tested)
                 result['expected_in_sitemap'] = sitemap_handler.check_url_in_sitemap(result['full_url'])['in_sitemap']
                 # For original URL, prepare it the same way to check if it's properly removed
+                # Use preserve_trailing_slash=True to distinguish between URLs with/without trailing slashes
                 original_prepared = tester._prepare_url(url_data['original_url'])
-                result['original_removed'] = not sitemap_handler.check_url_in_sitemap(original_prepared)['in_sitemap']
+                result['original_removed'] = not sitemap_handler.check_url_in_sitemap(original_prepared, preserve_trailing_slash=True)['in_sitemap']
                 result['sitemap_compliant'] = result['expected_in_sitemap'] and result['original_removed']
                 result['success'] = result['url_accessible'] and result['sitemap_compliant']  # Combined success
 
