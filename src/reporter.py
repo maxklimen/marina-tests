@@ -233,8 +233,8 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 fieldnames = [
                     'test_type', 'original_url', 'expected_url', 'tested_url',
                     'status_code', 'response_time',
-                    'url_accessible', 'expected_in_sitemap', 'original_removed', 'removed_from_sitemap', 'sitemap_compliant',
-                    'overall_success', 'error', 'redirect_chain'
+                    'url_accessible', 'url_inaccessible', 'expected_in_sitemap', 'original_removed', 'removed_from_sitemap',
+                    'sitemap_compliant', 'fully_removed', 'overall_success', 'error', 'redirect_chain'
                 ]
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 writer.writeheader()
@@ -249,10 +249,12 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'status_code': result.get('status_code', ''),
                         'response_time': result.get('response_time', ''),
                         'url_accessible': result.get('url_accessible', False),
+                        'url_inaccessible': 'N/A',  # Not applicable for redirect URLs
                         'expected_in_sitemap': result.get('expected_in_sitemap', False),
                         'original_removed': result.get('original_removed', False),
                         'removed_from_sitemap': 'N/A',  # Not applicable for redirect URLs
                         'sitemap_compliant': result.get('sitemap_compliant', False),
+                        'fully_removed': 'N/A',  # Not applicable for redirect URLs
                         'overall_success': result.get('success', False),
                         'error': result.get('error', ''),
                         'redirect_chain': ','.join(map(str, result.get('redirect_chain', [])))
@@ -267,12 +269,14 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'tested_url': result.get('full_url', ''),
                         'status_code': result.get('status_code', ''),
                         'response_time': result.get('response_time', ''),
-                        'url_accessible': result.get('url_accessible', False),
+                        'url_accessible': 'N/A',  # Not applicable for removal URLs
+                        'url_inaccessible': result.get('url_inaccessible', False),
                         'expected_in_sitemap': result.get('expected_in_sitemap', False),
                         'original_removed': 'N/A',  # Not applicable for removal URLs
                         'removed_from_sitemap': result.get('removed_from_sitemap', False),
                         'sitemap_compliant': result.get('sitemap_compliant', False),
-                        'overall_success': result.get('success', False),
+                        'fully_removed': result.get('fully_removed', False),
+                        'overall_success': result.get('fully_removed', False),  # Use fully_removed for success
                         'error': result.get('error', ''),
                         'redirect_chain': ','.join(map(str, result.get('redirect_chain', [])))
                     })
@@ -298,156 +302,395 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             total_removes = len(remove_results)
             passed_removes = sum(1 for r in remove_results if r['success'])
 
-            html_content = f"""
-<!DOCTYPE html>
-<html>
+            # Calculate overall statistics for HTML report
+            all_results = redirect_results + remove_results
+            passed_tests = sum(1 for r in all_results if r.get('success', False))
+            failed_tests = len(all_results) - passed_tests
+            success_rate = (passed_tests / len(all_results) * 100) if all_results else 0
+
+            html_content = f"""<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>California Psychics - QA Sitemap Test Report</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>California Psychics Sitemap QA Report</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; background-color: #f5f5f5; }}
-        .container {{ background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }}
-        .header {{ text-align: center; color: #333; border-bottom: 2px solid #007acc; padding-bottom: 20px; }}
-        .stats {{ display: flex; justify-content: space-around; margin: 30px 0; }}
-        .stat-box {{ text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 5px; min-width: 120px; }}
-        .stat-number {{ font-size: 1.8em; font-weight: bold; color: #007acc; }}
-        .success {{ color: #28a745; }}
-        .failure {{ color: #dc3545; }}
-        .warning {{ color: #ffc107; }}
-        .table-container {{ max-height: 600px; overflow-y: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; }}
-        table {{ width: 100%; border-collapse: collapse; }}
-        th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
-        th {{ background-color: #007acc; color: white; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); }}
-        .pass {{ background-color: #d4edda; }}
-        .fail {{ background-color: #f8d7da; }}
-        .partial {{ background-color: #fff3cd; }}
-        .section {{ margin: 30px 0; }}
-        .timestamp {{ color: #666; font-size: 0.9em; }}
-        .criteria-section {{ background-color: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }}
+        .status-pass {{ background-color: #d1edff !important; }}
+        .status-fail {{ background-color: #f8d7da !important; }}
+        .status-partial {{ background-color: #fff3cd !important; }}
+        .nav-tabs .nav-link.active {{ font-weight: bold; border-bottom: 3px solid #0d6efd; background: white; }}
+        .metric-value {{ font-size: 2rem; font-weight: bold; }}
+        .metric-label {{ font-size: 0.875rem; color: #6c757d; }}
+        .table-responsive {{ max-height: 75vh; }}
+        .nav-tabs {{ border-bottom: 2px solid #dee2e6; }}
+        .nav-tabs .nav-link {{ border: none; padding: 1rem 1.5rem; font-weight: 500; }}
+        .tab-content {{ background: white; border-radius: 0 0 0.375rem 0.375rem; }}
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🔍 California Psychics - Enhanced QA Sitemap Report</h1>
-            <p class="timestamp">Generated on {datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}</p>
-            <p>Environment: <strong>{Config.CURRENT_ENV.upper()}</strong> ({Config.get_base_url()})</p>
-        </div>
-
-        <div class="criteria-section">
-            <h2>📊 Dual Success Criteria Results</h2>
-            <div class="stats">
-                <div class="stat-box">
-                    <div class="stat-number success">{url_accessible}</div>
-                    <div>URLs Accessible</div>
-                    <div style="font-size: 0.8em;">({(url_accessible/total_redirects)*100:.1f}%)</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number {'success' if sitemap_compliant == total_redirects else 'failure'}">{sitemap_compliant}</div>
-                    <div>Sitemap Compliant</div>
-                    <div style="font-size: 0.8em;">({(sitemap_compliant/total_redirects)*100:.1f}%)</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number {'success' if overall_success == total_redirects else 'failure'}">{overall_success}</div>
-                    <div>Overall Success</div>
-                    <div style="font-size: 0.8em;">({(overall_success/total_redirects)*100:.1f}%)</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-number {'success' if passed_removes == total_removes else 'failure'}">{passed_removes}</div>
-                    <div>URLs Removed</div>
-                    <div style="font-size: 0.8em;">({total_removes} total)</div>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="text-center">
+                    <h1 class="display-5 mb-2">
+                        <i class="fas fa-sitemap text-primary"></i>
+                        California Psychics Sitemap QA Report
+                    </h1>
+                    <p class="text-muted">{datetime.now().strftime('%Y-%m-%d at %H:%M:%S')}</p>
+                    <p class="text-muted">Environment: <strong>{Config.CURRENT_ENV.upper()}</strong> ({Config.get_base_url()})</p>
                 </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>🔄 Enhanced Redirect URL Testing Results</h2>
-            <div class="table-container">
-            <table>
-                <tr>
-                    <th>Original URL</th>
-                    <th>Expected URL</th>
-                    <th>Status Code</th>
-                    <th>Response Time</th>
-                    <th>URL Access</th>
-                    <th>In Sitemap</th>
-                    <th>Original Removed</th>
-                    <th>Overall Result</th>
-                    <th>Error</th>
-                </tr>
-"""
+        <!-- Tab Navigation -->
+        <ul class="nav nav-tabs mb-0" id="reportTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="dashboard-tab" data-bs-toggle="tab" data-bs-target="#dashboard" type="button" role="tab">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="redirects-tab" data-bs-toggle="tab" data-bs-target="#redirects" type="button" role="tab">
+                    <i class="fas fa-exchange-alt me-2"></i>Redirect URLs ({len(redirect_results)})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="removals-tab" data-bs-toggle="tab" data-bs-target="#removals" type="button" role="tab">
+                    <i class="fas fa-trash-alt me-2"></i>Removal URLs ({len(remove_results)})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="failed-tab" data-bs-toggle="tab" data-bs-target="#failed" type="button" role="tab">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Failed Tests ({failed_tests})
+                </button>
+            </li>
+        </ul>
 
-            # Add enhanced redirect results
+        <!-- Tab Content -->
+        <div class="tab-content p-4 bg-white shadow-sm" id="reportTabContent">
+
+            <!-- Dashboard Tab -->
+            <div class="tab-pane fade show active" id="dashboard" role="tabpanel">
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-list-ol fa-2x text-primary mb-2"></i>
+                                <div class="metric-value text-primary">{len(all_results)}</div>
+                                <div class="metric-label">Total URLs Tested</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
+                                <div class="metric-value text-success">{passed_tests}</div>
+                                <div class="metric-label">Passed Tests</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-times-circle fa-2x text-danger mb-2"></i>
+                                <div class="metric-value text-danger">{failed_tests}</div>
+                                <div class="metric-label">Failed Tests</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-percentage fa-2x text-info mb-2"></i>
+                                <div class="metric-value text-info">{success_rate:.1f}%</div>
+                                <div class="metric-label">Success Rate</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Test Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <span class="badge bg-primary me-2">Redirect Tests:</span> {len(redirect_results)}
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-warning me-2">Removal Tests:</span> {len(remove_results)}
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-success me-2">Passed:</span> {passed_tests}
+                                </div>
+                                <div>
+                                    <span class="badge bg-danger me-2">Failed:</span> {failed_tests}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-sitemap me-2"></i>Sitemap Analysis</h5>
+                            </div>
+                            <div class="card-body">"""
+
+            # Add sitemap analysis if available
+            if sitemap_analysis and sitemap_analysis.get('fetch_success'):
+                expected_data = sitemap_analysis.get('expected_urls', {})
+                if expected_data:
+                    found = expected_data.get('found_in_sitemap', 0)
+                    total = expected_data.get('total_expected', 0)
+                    compliance_rate = (found / total * 100) if total > 0 else 0
+                    html_content += f"""
+                                    <div class="mb-2">
+                                        <span class="badge bg-info me-2">Total Sitemap URLs:</span> {sitemap_analysis.get('total_urls_in_sitemap', 0)}
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success me-2">Expected URLs Found:</span> {found}/{total}
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-primary me-2">Compliance Rate:</span> {compliance_rate:.1f}%
+                                    </div>"""
+                else:
+                    html_content += """
+                                    <div class="text-muted">
+                                        <i class="fas fa-info-circle me-2"></i>Sitemap analysis not available
+                                    </div>"""
+            else:
+                html_content += """
+                                <div class="text-danger">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Sitemap fetch failed
+                                </div>"""
+
+            html_content += """
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Redirects Tab -->
+            <div class="tab-pane fade" id="redirects" role="tabpanel">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <strong>Legend:</strong>
+                        <span class="badge bg-success ms-2">PASS</span> URL accessible AND sitemap compliant
+                        <span class="badge bg-warning ms-2">PARTIAL</span> URL accessible but sitemap issues
+                        <span class="badge bg-danger ms-2">FAIL</span> URL not accessible or major issues
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="redirectsTable" class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Original URL</th>
+                                <th>Expected URL</th>
+                                <th>Status</th>
+                                <th>Response Time</th>
+                                <th>URL Access</th>
+                                <th>In Sitemap</th>
+                                <th>Original Removed</th>
+                                <th>Result</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>"""
+
+            # Add redirect results
             for result in redirect_results:
                 url_accessible = result.get('url_accessible', False)
                 expected_in_sitemap = result.get('expected_in_sitemap', False)
                 original_removed = result.get('original_removed', False)
-                sitemap_compliant = result.get('sitemap_compliant', False)
                 overall_success = result.get('success', False)
 
                 if overall_success:
-                    row_class = "pass"
-                elif url_accessible and not sitemap_compliant:
-                    row_class = "partial"
+                    row_class = "status-pass"
+                    result_badge = '<span class="badge bg-success">PASS</span>'
+                elif url_accessible and not (expected_in_sitemap and original_removed):
+                    row_class = "status-partial"
+                    result_badge = '<span class="badge bg-warning">PARTIAL</span>'
                 else:
-                    row_class = "fail"
+                    row_class = "status-fail"
+                    result_badge = '<span class="badge bg-danger">FAIL</span>'
 
-                url_result = "✅ 200" if url_accessible else f"❌ {result.get('status_code', 'FAIL')}"
-                sitemap_result = "✅ Yes" if expected_in_sitemap else "❌ No"
-                removed_result = "✅ Yes" if original_removed else "❌ No"
-                overall_result = "✅ PASS" if overall_success else "❌ FAIL"
+                url_result = f'<span class="badge bg-success">200</span>' if url_accessible else f'<span class="badge bg-danger">{result.get("status_code", "FAIL")}</span>'
+                sitemap_result = '<span class="badge bg-success">Yes</span>' if expected_in_sitemap else '<span class="badge bg-danger">No</span>'
+                removed_result = '<span class="badge bg-success">Yes</span>' if original_removed else '<span class="badge bg-danger">No</span>'
 
                 html_content += f"""
-                <tr class="{row_class}">
-                    <td>{result.get('original_url', '')}</td>
-                    <td>{result.get('url', '')}</td>
-                    <td>{result.get('status_code', 'N/A')}</td>
-                    <td>{result.get('response_time', 0):.3f}s</td>
-                    <td>{url_result}</td>
-                    <td>{sitemap_result}</td>
-                    <td>{removed_result}</td>
-                    <td>{overall_result}</td>
-                    <td>{result.get('error', '')}</td>
-                </tr>
-"""
+                                <tr class="{row_class}">
+                                    <td><small>{result.get('original_url', '')}</small></td>
+                                    <td><small>{result.get('url', '')}</small></td>
+                                    <td>{result.get('status_code', 'N/A')}</td>
+                                    <td>{result.get('response_time', 0):.3f}s</td>
+                                    <td>{url_result}</td>
+                                    <td>{sitemap_result}</td>
+                                    <td>{removed_result}</td>
+                                    <td>{result_badge}</td>
+                                    <td><small>{result.get('error', '')}</small></td>
+                                </tr>"""
 
             html_content += """
-            </table>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <div class="section">
-            <h2>🗑️ Remove URL Testing Results</h2>
-            <div class="table-container">
-            <table>
-                <tr>
-                    <th>URL to Remove</th>
-                    <th>Status Code</th>
-                    <th>Response Time</th>
-                    <th>Result</th>
-                    <th>Error</th>
-                </tr>
-"""
+            <!-- Removals Tab -->
+            <div class="tab-pane fade" id="removals" role="tabpanel">
+                <div class="mb-3">
+                    <div class="alert alert-info">
+                        <strong>Removal URL Testing:</strong> These URLs should be inaccessible and removed from sitemap.
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="removalsTable" class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>URL to Remove</th>
+                                <th>Status Code</th>
+                                <th>Response Time</th>
+                                <th>URL Access</th>
+                                <th>Sitemap Removal</th>
+                                <th>Overall Result</th>
+                                <th>Error</th>
+                            </tr>
+                        </thead>
+                        <tbody>"""
 
-            # Add remove results
+            # Add removal results with enhanced reporting
             for result in remove_results:
-                row_class = "pass" if result['success'] else "fail"
-                result_text = "✅ REMOVED" if result['success'] else "❌ STILL ACCESSIBLE"
+                url_inaccessible = result.get('url_inaccessible', False)
+                removed_from_sitemap = result.get('removed_from_sitemap', False)
+                fully_removed = result.get('fully_removed', False)
+
+                if fully_removed:
+                    row_class = "status-pass"
+                    result_badge = '<span class="badge bg-success">FULLY REMOVED</span>'
+                else:
+                    row_class = "status-fail"
+                    result_badge = '<span class="badge bg-danger">STILL PRESENT</span>'
+
+                access_result = '<span class="badge bg-success">Inaccessible</span>' if url_inaccessible else '<span class="badge bg-danger">Still Accessible</span>'
+                sitemap_result = '<span class="badge bg-success">Removed</span>' if removed_from_sitemap else '<span class="badge bg-danger">Still in Sitemap</span>'
 
                 html_content += f"""
-                <tr class="{row_class}">
-                    <td>{result.get('original_url', '')}</td>
-                    <td>{result.get('status_code', 'N/A')}</td>
-                    <td>{result.get('response_time', 0):.3f}s</td>
-                    <td>{result_text}</td>
-                    <td>{result.get('error', '')}</td>
-                </tr>
-"""
+                                <tr class="{row_class}">
+                                    <td><small>{result.get('original_url', '')}</small></td>
+                                <td>{result.get('status_code', 'N/A')}</td>
+                                <td>{result.get('response_time', 0):.3f}s</td>
+                                <td>{access_result}</td>
+                                <td>{sitemap_result}</td>
+                                <td>{result_badge}</td>
+                                <td><small>{result.get('error', '')}</small></td>
+                            </tr>"""
 
             html_content += """
-            </table>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Failed Tests Tab -->
+            <div class="tab-pane fade" id="failed" role="tabpanel">
+                <div class="mb-3">
+                    <div class="alert alert-danger">
+                        <strong>Failed Tests:</strong> These URLs require immediate attention.
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="failedTable" class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>URL</th>
+                                <th>Test Type</th>
+                                <th>Status Code</th>
+                                <th>Response Time</th>
+                                <th>Error</th>
+                                <th>Expected URL</th>
+                            </tr>
+                        </thead>
+                        <tbody>"""
+
+            # Add failed tests
+            failed_results = [r for r in all_results if not r.get('success', False)]
+            for result in failed_results:
+                test_type = result.get('test_type', 'unknown')
+                type_badge = f'<span class="badge bg-info">{test_type.upper()}</span>'
+
+                html_content += f"""
+                                <tr class="status-fail">
+                                    <td><small>{result.get('original_url', result.get('url', ''))}</small></td>
+                                    <td>{type_badge}</td>
+                                    <td><span class="badge bg-danger">{result.get('status_code', 'N/A')}</span></td>
+                                    <td>{result.get('response_time', 0):.3f}s</td>
+                                    <td><small>{result.get('error', '')}</small></td>
+                                    <td><small>{result.get('expected_url', result.get('url', ''))}</small></td>
+                                </tr>"""
+
+            html_content += """
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+
+    <script>
+        $(document).ready(function() {{
+            // Initialize DataTables with enhanced features
+            const tableConfig = {{
+                responsive: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[0, 'asc']],
+                columnDefs: [
+                    {{ targets: '_all', className: 'text-nowrap' }}
+                ],
+                dom: '<"row"<"col-sm-6"l><"col-sm-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-5"i><"col-sm-7"p>>',
+                language: {{
+                    search: "Search URLs:",
+                    lengthMenu: "Show _MENU_ results per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ URLs",
+                    paginate: {{
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    }}
+                }}
+            }};
+
+            $('#redirectsTable').DataTable(tableConfig);
+            $('#removalsTable').DataTable(tableConfig);
+            $('#failedTable').DataTable(tableConfig);
+
+            // Auto-switch to failed tab if there are failures
+            if ({failed_tests} > 0) {{
+                // Optionally highlight the failed tab
+                $('#failed-tab').addClass('text-danger');
+            }}
+
+            // Enhanced tooltips
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        }});
+    </script>
 </body>
 </html>
 """

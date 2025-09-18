@@ -117,9 +117,10 @@ def main():
                 # Add sitemap check for removal URLs - they should NOT be in sitemap
                 prepared_url = tester._prepare_url(url_data['original_url'])
                 result['removed_from_sitemap'] = not sitemap_handler.check_url_in_sitemap(prepared_url)['in_sitemap']
-                result['url_accessible'] = False  # Removal URLs should not be accessible
+                result['url_inaccessible'] = not result['success']  # Should be inaccessible (success=False is good)
                 result['expected_in_sitemap'] = False  # Removal URLs should not be in sitemap
                 result['sitemap_compliant'] = result['removed_from_sitemap']
+                result['fully_removed'] = result['removed_from_sitemap'] and result['url_inaccessible']
 
                 # Print individual result if verbose
                 reporter.print_url_test_result(result, i, len(remove_data))
