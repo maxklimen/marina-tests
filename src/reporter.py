@@ -233,7 +233,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                 fieldnames = [
                     'test_type', 'original_url', 'expected_url', 'tested_url',
                     'status_code', 'response_time',
-                    'url_accessible', 'expected_in_sitemap', 'original_removed', 'sitemap_compliant',
+                    'url_accessible', 'expected_in_sitemap', 'original_removed', 'removed_from_sitemap', 'sitemap_compliant',
                     'overall_success', 'error', 'redirect_chain'
                 ]
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -251,6 +251,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'url_accessible': result.get('url_accessible', False),
                         'expected_in_sitemap': result.get('expected_in_sitemap', False),
                         'original_removed': result.get('original_removed', False),
+                        'removed_from_sitemap': 'N/A',  # Not applicable for redirect URLs
                         'sitemap_compliant': result.get('sitemap_compliant', False),
                         'overall_success': result.get('success', False),
                         'error': result.get('error', ''),
@@ -266,10 +267,11 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         'tested_url': result.get('full_url', ''),
                         'status_code': result.get('status_code', ''),
                         'response_time': result.get('response_time', ''),
-                        'url_accessible': 'N/A',
-                        'expected_in_sitemap': 'N/A',
-                        'original_removed': not result.get('success', True),  # Should be removed
-                        'sitemap_compliant': result.get('success', False),
+                        'url_accessible': result.get('url_accessible', False),
+                        'expected_in_sitemap': result.get('expected_in_sitemap', False),
+                        'original_removed': 'N/A',  # Not applicable for removal URLs
+                        'removed_from_sitemap': result.get('removed_from_sitemap', False),
+                        'sitemap_compliant': result.get('sitemap_compliant', False),
                         'overall_success': result.get('success', False),
                         'error': result.get('error', ''),
                         'redirect_chain': ','.join(map(str, result.get('redirect_chain', [])))
@@ -311,9 +313,10 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         .success {{ color: #28a745; }}
         .failure {{ color: #dc3545; }}
         .warning {{ color: #ffc107; }}
-        table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+        .table-container {{ max-height: 600px; overflow-y: auto; margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; }}
+        table {{ width: 100%; border-collapse: collapse; }}
         th, td {{ padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }}
-        th {{ background-color: #007acc; color: white; }}
+        th {{ background-color: #007acc; color: white; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); }}
         .pass {{ background-color: #d4edda; }}
         .fail {{ background-color: #f8d7da; }}
         .partial {{ background-color: #fff3cd; }}
@@ -358,6 +361,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
         <div class="section">
             <h2>🔄 Enhanced Redirect URL Testing Results</h2>
+            <div class="table-container">
             <table>
                 <tr>
                     <th>Original URL</th>
@@ -408,10 +412,12 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
             html_content += """
             </table>
+            </div>
         </div>
 
         <div class="section">
             <h2>🗑️ Remove URL Testing Results</h2>
+            <div class="table-container">
             <table>
                 <tr>
                     <th>URL to Remove</th>
@@ -439,6 +445,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
             html_content += """
             </table>
+            </div>
         </div>
     </div>
 </body>
