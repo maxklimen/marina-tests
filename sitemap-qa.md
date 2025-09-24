@@ -14,7 +14,7 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 ### Target Sitemaps
 - **Main Content**: `www.californiapsychics.com/sitemap.xml`
 - **Horoscope**: `www.californiapsychics.com/horoscope/sitemap/`
-- **Blog**: `www.californiapsychics.com/blog/sitemap/` (with fallback)
+- **Blog**: `www.californiapsychics.com/blog/sitemap/`
 
 ## Business Requirements
 
@@ -51,7 +51,7 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 
 ### Latest Performance (September 24, 2025)
 - **Horoscope**: 100% success with dedicated sitemap
-- **Blog**: 81.8% success with main sitemap fallback
+- **Blog**: 81.8% success with main sitemap
 - **Psychic**: 59% success (QA environment sync documented)
 
 ### Outstanding Issues
@@ -64,7 +64,7 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 The solution supports distributed sitemap architecture:
 - **Main Sitemap**: `/sitemap.xml` - Psychic profiles, general content
 - **Horoscope Sitemap**: `/horoscope/sitemap/` - Dedicated horoscope content
-- **Blog Sitemap**: `/blog/sitemap/` - Blog content (with main sitemap fallback)
+- **Blog Sitemap**: `/blog/sitemap/` - Blog content
 
 ### Testing Framework
 - **Command-line Interface**: `--file`, `--all`, `--env` parameters

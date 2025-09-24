@@ -15,7 +15,7 @@ Automated testing solution for validating sitemap URLs and redirect management f
 ### Sitemap Architecture:
 - **Main Content**: `/sitemap.xml` → Psychic profiles, general content
 - **Horoscope Content**: `/horoscope/sitemap/` → Dedicated horoscope URLs
-- **Blog Content**: `/blog/sitemap/` → Blog-specific content (with fallback)
+- **Blog Content**: `/blog/sitemap/` → Blog-specific content
 
 ### What It Does:
 - Validates URLs with 301 redirects point to valid destinations (200 status)
@@ -318,7 +318,7 @@ python test_sitemap_qa.py --file Psychics.csv
 
 ### Current Performance
 - **Horoscope Testing**: 100% success with dedicated sitemap
-- **Blog Testing**: 81.8% success with main sitemap fallback
+- **Blog Testing**: 81.8% success with main sitemap
 - **Psychic Testing**: 59% success (QA environment sync documented)
 
 📊 **Latest Results**: See [docs/reports/LATEST_TEST_RESULTS.md](docs/reports/LATEST_TEST_RESULTS.md) for detailed test run analysis

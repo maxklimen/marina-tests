@@ -34,10 +34,10 @@ Latest QA testing results with environment isolation breakthrough:
 
 ## Key Achievement: Environment Isolation
 
-**Major Breakthrough (2025-09-24)**: Implemented environment isolation by disabling QA→Production fallback contamination. This revealed the true QA environment state:
+**Major Breakthrough (2025-09-24)**: Implemented environment isolation for accurate per-environment testing. This revealed the true QA environment state:
 
 - **Horoscope content**: Improved from 0% → 100% compliance
-- **Previously**: QA timeout caused fallback to Production sitemap (false results)
+- **Previously**: Cross-environment contamination caused inaccurate results
 - **Now**: Accurate per-environment testing without cross-contamination
 
 ## Usage
