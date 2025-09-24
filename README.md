@@ -349,7 +349,39 @@ This tool has been successfully tested with:
 - ✅ Command-line parameter support
 - ✅ Full automation replacing manual work
 
-**Latest test run**: 2025-09-23 - Multi-file testing with unique reports
+**Latest test run**: 2025-09-23 - Multi-file testing with comprehensive sitemap analysis
+
+## 🚨 KNOWN ISSUES - Critical Sitemap Gaps Identified
+
+⚠️ **IMPORTANT**: Testing has identified critical sitemap compliance issues requiring immediate attention.
+
+### Issue #1: Horoscope Content Missing from Sitemaps 🔴 CRITICAL
+- **Impact**: All 51 horoscope URLs are completely absent from both QA and Production sitemaps
+- **Status**: Pages are accessible but invisible to search engines
+- **SEO Risk**: Entire horoscope section not discoverable by Google, Bing, etc.
+- **Action**: Escalated to DevOps team for immediate sitemap updates
+
+### Issue #2: QA/Production Sitemap Mismatch 🟡 HIGH
+- **Impact**: 287 psychic profile URLs missing from QA but present in Production
+- **Testing Risk**: Cannot validate Production behavior in QA environment
+- **Action**: QA sitemap synchronization required
+
+### Issue #3: Blog vs Articles Path Conflict 🟡 HIGH
+- **Impact**: Redirects use `/blog/` paths but sitemaps only contain `/articles/` paths
+- **SEO Risk**: Broken redirect chains
+- **Action**: Path structure standardization needed
+
+### 📋 For Complete Details:
+- **Executive Summary**: [SITEMAP_COMPLIANCE_REPORT.md](SITEMAP_COMPLIANCE_REPORT.md)
+- **Technical Tracking**: [SITEMAP_ISSUES.md](SITEMAP_ISSUES.md)
+- **Implementation Status**: [sitemap-qa.md](sitemap-qa.md)
+
+### ✅ Testing Tool Validation:
+Our testing methodology has been manually verified and confirmed accurate:
+- No formatting issues or false positives
+- All reported gaps confirmed via manual sitemap inspection
+- URL accessibility independently verified
+- Both QA and Production environments validated
 
 ## 📈 Future Enhancements
 

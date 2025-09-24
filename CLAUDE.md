@@ -137,3 +137,33 @@ output/
 - Design for scalability to handle multiple CSV input files
 - Target sitemap: `www.californiapsychics.com/sitemap.xml`
 - Built to eliminate manual URL checking work
+
+## Sitemap Architecture Insights
+
+### QA vs Production Environment Differences
+- **QA Sitemap**: 1,418 URLs (qa-www.californiapsychics.com/sitemap.xml)
+- **Production Sitemap**: 1,073 URLs (www.californiapsychics.com/sitemap.xml)
+- **Key Difference**: QA has MORE URLs but missing critical content categories
+
+### Content Structure Analysis
+- **Articles vs Blog**: Sitemaps use `/articles/` paths, but redirects reference `/blog/` paths
+- **Horoscope Content**: All horoscope URLs (51) are absent from both environments
+- **Psychic Profiles**: Present in Production but many missing from QA (287 URLs)
+
+### Sitemap Namespace Handling
+- **QA Environment**: Uses custom namespace `https://qa-cdn-1.californiapsychics.com/sitemap.xml`
+- **Production Environment**: Standard sitemap namespace
+- **Parser**: Dynamically detects namespace from root element
+- **URL Normalization**: qa-www → www conversion for proper comparison
+
+### Dual Verification Criteria
+The testing implements two-stage validation:
+1. **URL Accessibility**: Confirms redirect target returns 200 status
+2. **Sitemap Compliance**: Verifies URL presence in sitemap XML
+3. **Combined Success**: Both criteria must pass for complete validation
+
+### Critical Issues Discovered
+- **Horoscope Gap**: Complete absence from all sitemaps (SEO impact)
+- **Path Conflicts**: Blog vs Articles URL structure misalignment
+- **Environment Parity**: QA cannot properly test Production behavior
+- **Testing Value**: Tool successfully identified genuine sitemap gaps
