@@ -2,6 +2,8 @@
 
 Automated testing solution for validating sitemap URLs and redirect management for California Psychics website. This tool eliminates manual URL checking and provides comprehensive reporting for SEO optimization.
 
+**🆕 NEW: Multi-File Support** - Now supports testing multiple CSV files with different column structures (Psychics.csv, Blog.csv, Horoscope.csv)
+
 ## 🎯 Purpose
 
 This tool automates the tedious process of manually checking hundreds of URLs to ensure:
@@ -15,7 +17,9 @@ This tool automates the tedious process of manually checking hundreds of URLs to
 ```
 marina-tests/
 ├── in/
-│   └── Psychics.csv          # Input data with URL audit information
+│   ├── Psychics.csv          # Psychic profiles URL audit data (492 redirects)
+│   ├── Blog.csv              # Blog posts URL audit data (11 redirects)
+│   └── Horoscope.csv         # Horoscope pages URL audit data (51 redirects)
 ├── src/
 │   ├── config.py             # Configuration and environment settings
 │   ├── csv_parser.py         # CSV data parsing and filtering
@@ -23,7 +27,7 @@ marina-tests/
 │   ├── sitemap_handler.py    # Sitemap XML fetching and analysis
 │   └── reporter.py           # Output formatting and report generation
 ├── tests/                    # Unit tests (future enhancement)
-├── output/                   # Generated reports and results
+├── output/                   # Generated reports and results (unique per file)
 ├── requirements.txt          # Python dependencies
 ├── test_sitemap_qa.py        # Main testing script
 ├── CLAUDE.md                 # Developer documentation
@@ -56,32 +60,88 @@ pip install -r requirements.txt
 ### 2. Run QA Testing
 
 ```bash
+# Test default file (Psychics.csv)
 python test_sitemap_qa.py
+
+# Test specific file
+python test_sitemap_qa.py --file Blog.csv
+python test_sitemap_qa.py --file Horoscope.csv
+
+# Test all files
+python test_sitemap_qa.py --all
+
+# Test in production environment
+python test_sitemap_qa.py --file Psychics.csv --env prod
 ```
 
 ### 3. View Results
 
-Check the `output/` directory for:
-- `test_results_YYYY-MM-DD.csv` - Detailed results for Excel
-- `test_report_YYYY-MM-DD.html` - Comprehensive report for sharing
+Check the `output/` directory for file-specific reports:
+- `test_results_[filename]_YYYY-MM-DD.csv` - Detailed results for Excel
+- `test_report_[filename]_YYYY-MM-DD.html` - Comprehensive report for sharing
+
+## 🎛️ Command-Line Usage
+
+### Available Options
+
+```bash
+python test_sitemap_qa.py [OPTIONS]
+
+Options:
+  -h, --help            Show help message
+  -f FILE, --file FILE  Specify CSV file to test (Blog.csv, Horoscope.csv, Psychics.csv)
+  -a, --all             Test all CSV files in the input directory
+  -e ENV, --env ENV     Environment to test: qa (default) or prod
+```
+
+### Usage Examples
+
+```bash
+# Basic usage (tests Psychics.csv in QA)
+python test_sitemap_qa.py
+
+# Test specific files
+python test_sitemap_qa.py --file Blog.csv
+python test_sitemap_qa.py --file Horoscope.csv --env qa
+
+# Test all files at once
+python test_sitemap_qa.py --all
+
+# Production environment testing
+python test_sitemap_qa.py --file Psychics.csv --env prod
+python test_sitemap_qa.py --all --env prod
+
+# Get help
+python test_sitemap_qa.py --help
+```
 
 ## 📊 What Gets Tested
 
-### Redirect URLs (301 Status)
-- **Source**: URLs with status code 301 in `in/Psychics.csv`
-- **Test**: Verify "Expected URL" returns 200 status code
-- **Count**: ~492 URLs from the CSV data
-- **Environment**: QA environment (qa-www.californiapsychics.com)
+### Supported CSV Files
 
-### Remove URLs
-- **Source**: URLs marked "REMOVE" in Expected URL column
+| File | URLs | Column Structure | Description |
+|------|------|------------------|-------------|
+| **Psychics.csv** | 492 redirects | Columns 1, 4, 61 (Expected URL) | Psychic profile pages |
+| **Blog.csv** | 11 redirects | Columns 1, 4, 61 (Redirect URL) | Blog post redirects |
+| **Horoscope.csv** | 51 redirects | Columns 1, 4, 64 (Expected URL) | Horoscope page redirects |
+
+### Test Types
+
+**Redirect URLs (301 Status)**
+- **Source**: URLs with status code 301 in CSV files
+- **Test**: Verify redirect target returns 200 status code
+- **Validation**: Check URL accessibility AND sitemap compliance
+- **Environment**: QA (qa-www.californiapsychics.com) or Production
+
+**Remove URLs**
+- **Source**: URLs marked "REMOVE" in redirect column
 - **Test**: Verify URLs are properly inaccessible (404/redirected)
-- **Count**: ~2 URLs from the CSV data
+- **Validation**: Confirm removal from sitemap
 
-### Sitemap Validation
-- **Source**: Live sitemap from qa-www.californiapsychics.com/sitemap.xml
+**Sitemap Validation**
+- **Source**: Live sitemap XML from target environment
 - **Test**: Compare against expected URL changes
-- **Validation**: Ensure expected URLs are present, removed URLs are absent
+- **Dual Verification**: Expected URLs IN sitemap + Original URLs REMOVED
 
 ## 🎨 Sample Output
 
@@ -142,8 +202,16 @@ Testing that Expected URLs return 200 status codes...
 
 ### Environment Switching
 
-Edit `src/config.py` to change environments:
+Use command-line parameters (recommended):
+```bash
+# QA Environment (default)
+python test_sitemap_qa.py --env qa
 
+# Production Environment
+python test_sitemap_qa.py --env prod
+```
+
+Or edit `src/config.py`:
 ```python
 # Current environment (qa or prod)
 CURRENT_ENV = 'qa'
@@ -152,6 +220,30 @@ CURRENT_ENV = 'qa'
 ENVIRONMENTS = {
     'qa': 'qa-www.californiapsychics.com',
     'prod': 'www.californiapsychics.com'
+}
+```
+
+### CSV File Column Mappings
+
+The tool automatically detects column structures:
+
+```python
+CSV_COLUMN_MAPPINGS = {
+    'Psychics.csv': {
+        'original_url': 0,  # Column 1
+        'status_code': 3,   # Column 4
+        'expected_url': 60, # Column 61: Expected URL
+    },
+    'Blog.csv': {
+        'original_url': 0,  # Column 1
+        'status_code': 3,   # Column 4
+        'expected_url': 60, # Column 61: Redirect URL
+    },
+    'Horoscope.csv': {
+        'original_url': 0,  # Column 1
+        'status_code': 3,   # Column 4
+        'expected_url': 63, # Column 64: Expected URL
+    }
 }
 ```
 
@@ -171,13 +263,28 @@ VERBOSE = True          # detailed output
 
 ## 📋 CSV Data Format
 
-The tool expects CSV files in the `in/` directory with these key columns:
+The tool supports multiple CSV files with different column structures:
 
+### Psychics.csv
 | Column | Index | Description |
 |--------|-------|-------------|
 | Original Url | 1 | Current URLs in sitemap |
 | Status Code | 4 | HTTP response codes (filter for 301) |
 | Expected URL | 61 | Target URLs for redirects, or "REMOVE" |
+
+### Blog.csv
+| Column | Index | Description |
+|--------|-------|-------------|
+| Original Url | 1 | Current URLs in sitemap |
+| Status Code | 4 | HTTP response codes (filter for 301) |
+| Redirect URL | 61 | Target URLs for redirects |
+
+### Horoscope.csv
+| Column | Index | Description |
+|--------|-------|-------------|
+| Original Url | 1 | Current URLs in sitemap |
+| Status Code | 4 | HTTP response codes (filter for 301) |
+| Expected URL | 64 | Target URLs for redirects, or "REMOVE" |
 
 ## 🔍 Understanding Results
 
@@ -217,28 +324,41 @@ The tool expects CSV files in the `in/` directory with these key columns:
 ## 🚀 Adding New CSV Files
 
 1. Place new CSV file in `in/` directory
-2. Update `Config.CSV_FILE` in `src/config.py`
-3. Ensure CSV has the required columns (1, 4, 61)
-4. Run the script normally
+2. Add column mapping to `Config.CSV_COLUMN_MAPPINGS` in `src/config.py`
+3. Ensure CSV has the required columns (Original URL, Status Code, Expected/Redirect URL)
+4. Run with: `python test_sitemap_qa.py --file NewFile.csv`
+
+### Example Configuration
+```python
+'NewFile.csv': {
+    'original_url': 0,    # Column index for original URLs
+    'status_code': 3,     # Column index for status codes
+    'expected_url': 59,   # Column index for redirect URLs
+    'redirect_url_column': 'Expected URL'  # Column name
+}
+```
 
 ## ✅ **TESTED & WORKING**
 
 This tool has been successfully tested with:
-- ✅ 490 redirect URLs tested (99.6% pass rate)
-- ✅ 2 removal URLs validated
-- ✅ Professional CSV and HTML reports generated
-- ✅ QA environment sitemap analysis
+- ✅ **Psychics.csv**: 492 redirect URLs tested (~99.6% pass rate)
+- ✅ **Blog.csv**: 11 redirect URLs tested (81.8% pass rate)
+- ✅ **Horoscope.csv**: 51 redirect URLs tested (100% URL accessibility)
+- ✅ Professional CSV and HTML reports with unique filenames
+- ✅ Multi-environment support (QA/Production)
+- ✅ Command-line parameter support
 - ✅ Full automation replacing manual work
 
-**Latest test run**: 2025-09-17 - Completed 492 tests in 3.5 minutes
+**Latest test run**: 2025-09-23 - Multi-file testing with unique reports
 
 ## 📈 Future Enhancements
 
 - [ ] Parallel URL testing for faster execution
-- [ ] Support for multiple CSV files in one run
+- [x] Support for multiple CSV files in one run ✅ **COMPLETED**
+- [ ] Combined summary report when using --all flag
 - [ ] Email notifications for test results
 - [ ] Scheduled testing with cron jobs
-- [ ] Production environment testing mode
+- [x] Production environment testing mode ✅ **COMPLETED**
 - [ ] Integration with CI/CD pipelines
 
 ## 🤝 Support
@@ -251,21 +371,35 @@ For issues or questions:
 
 ## 📄 Files Generated
 
-### CSV Results (`output/test_results_YYYY-MM-DD.csv`)
+### CSV Results (`output/test_results_[filename]_YYYY-MM-DD.csv`)
 Detailed spreadsheet with:
 - Test type (redirect/remove)
 - Original and expected URLs
 - Status codes and response times
+- URL accessibility and sitemap compliance
+- Dual verification criteria
 - Success/failure status
 - Error messages
 
-### HTML Report (`output/test_report_YYYY-MM-DD.html`)
+### HTML Report (`output/test_report_[filename]_YYYY-MM-DD.html`)
 Professional report with:
 - Executive summary with statistics
 - Color-coded test results
 - Sortable tables
+- Enhanced dual criteria validation
 - Visual charts and graphs
 - Shareable format for stakeholders
+
+### Example Output Files
+```
+output/
+├── test_results_Psychics_2025-09-23.csv
+├── test_report_Psychics_2025-09-23.html
+├── test_results_Blog_2025-09-23.csv
+├── test_report_Blog_2025-09-23.html
+├── test_results_Horoscope_2025-09-23.csv
+└── test_report_Horoscope_2025-09-23.html
+```
 
 ---
 

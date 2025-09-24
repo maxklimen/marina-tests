@@ -9,6 +9,7 @@ and ensure proper URL management for SEO purposes.
 import sys
 import os
 import time
+import argparse
 from datetime import datetime
 
 # Add src directory to path for imports
@@ -21,23 +22,70 @@ from sitemap_handler import SitemapHandler
 from reporter import Reporter
 
 
-def main():
-    """Main function to run sitemap QA testing."""
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='California Psychics Sitemap QA Testing Tool',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python test_sitemap_qa.py                    # Test Psychics.csv (default)
+  python test_sitemap_qa.py --file Blog.csv    # Test Blog.csv
+  python test_sitemap_qa.py --file Horoscope.csv  # Test Horoscope.csv
+  python test_sitemap_qa.py --all              # Test all CSV files
+        """
+    )
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--file', '-f',
+                      help='Specify CSV file to test (e.g., Blog.csv, Horoscope.csv)',
+                      default='Psychics.csv')
+    group.add_argument('--all', '-a',
+                      action='store_true',
+                      help='Test all CSV files in the input directory')
+
+    parser.add_argument('--env', '-e',
+                       choices=['qa', 'prod'],
+                       default='qa',
+                       help='Environment to test (default: qa)')
+
+    return parser.parse_args()
+
+
+def get_available_csv_files():
+    """Get list of available CSV files in the input directory."""
+    input_dir = Config.INPUT_DIR
+    if not os.path.exists(input_dir):
+        return []
+
+    csv_files = [f for f in os.listdir(input_dir) if f.endswith('.csv')]
+    return sorted(csv_files)
+
+
+def run_test_for_file(csv_file, env='qa'):
+    """Run sitemap QA testing for a specific CSV file."""
     start_time = time.time()
+
+    # Set configuration
+    Config.set_csv_file(csv_file)
+    Config.CURRENT_ENV = env
 
     # Initialize components
     reporter = Reporter()
-    parser = CSVParser()
+    parser = CSVParser(Config.get_input_file_path(csv_file))
     tester = URLTester(Config.CURRENT_ENV)
     sitemap_handler = SitemapHandler(Config.CURRENT_ENV)
 
     try:
-        # Print header
+        # Print header with file information
+        print(f"\n{'=' * 80}")
+        print(f"🧪 TESTING FILE: {csv_file}")
+        print(f"{'=' * 80}")
         reporter.print_header(Config.CURRENT_ENV)
 
         # Load and analyze CSV data
         reporter.print_section_header("📊 LOADING TEST DATA")
-        print(f"🔄 Loading data from: {Config.get_input_file_path()}")
+        print(f"🔄 Loading data from: {Config.get_input_file_path(csv_file)}")
 
         redirect_data, remove_data = parser.get_all_test_data()
 
@@ -173,10 +221,10 @@ def main():
         reporter.print_section_header("📄 GENERATING REPORTS")
 
         # Save CSV results
-        csv_path = reporter.save_csv_results(redirect_results, remove_results)
+        csv_path = reporter.save_csv_results(redirect_results, remove_results, csv_file)
 
         # Save HTML report
-        html_path = reporter.save_html_report(redirect_results, remove_results, sitemap_analysis)
+        html_path = reporter.save_html_report(redirect_results, remove_results, sitemap_analysis, csv_file)
 
         # Print summary
         reporter.print_summary(redirect_results, remove_results, sitemap_analysis)
@@ -190,15 +238,15 @@ def main():
         failed_tests = sum(1 for r in all_results if not r['success'])
 
         if failed_tests > 0:
-            print(f"\n⚠️  {failed_tests} test(s) failed. Please review the results.")
+            print(f"\n⚠️  {failed_tests} test(s) failed for {csv_file}. Please review the results.")
             return 1
         else:
-            print(f"\n🎉 All tests passed successfully!")
+            print(f"\n🎉 All tests passed successfully for {csv_file}!")
             return 0
 
     except FileNotFoundError as e:
         print(f"❌ File not found: {e}")
-        print("Please ensure the CSV file exists in the 'in/' directory.")
+        print(f"Please ensure {csv_file} exists in the 'in/' directory.")
         return 1
 
     except KeyboardInterrupt:
@@ -206,43 +254,103 @@ def main():
         return 1
 
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Unexpected error while testing {csv_file}: {e}")
         import traceback
         traceback.print_exc()
         return 1
 
 
+def main():
+    """Main function to run sitemap QA testing."""
+    args = parse_arguments()
+
+    if args.all:
+        # Test all CSV files
+        csv_files = get_available_csv_files()
+        if not csv_files:
+            print("❌ No CSV files found in the 'in/' directory.")
+            return 1
+
+        print(f"🔄 Found {len(csv_files)} CSV file(s): {', '.join(csv_files)}")
+
+        overall_exit_code = 0
+        for csv_file in csv_files:
+            if csv_file in Config.CSV_COLUMN_MAPPINGS:
+                print(f"\n{'=' * 100}")
+                print(f"🚀 STARTING TEST FOR: {csv_file}")
+                print(f"{'=' * 100}")
+
+                exit_code = run_test_for_file(csv_file, args.env)
+                if exit_code != 0:
+                    overall_exit_code = exit_code
+            else:
+                print(f"⚠️  Skipping {csv_file}: No column mapping defined")
+
+        return overall_exit_code
+    else:
+        # Test single file
+        csv_file = args.file
+
+        # Validate file exists
+        input_file_path = Config.get_input_file_path(csv_file)
+        if not os.path.exists(input_file_path):
+            print(f"❌ File not found: {input_file_path}")
+            print("Available files:")
+            available_files = get_available_csv_files()
+            for f in available_files:
+                print(f"  • {f}")
+            return 1
+
+        # Validate column mapping exists
+        if csv_file not in Config.CSV_COLUMN_MAPPINGS:
+            print(f"❌ No column mapping defined for {csv_file}")
+            print("Supported files:")
+            for f in Config.CSV_COLUMN_MAPPINGS.keys():
+                print(f"  • {f}")
+            return 1
+
+        return run_test_for_file(csv_file, args.env)
+
+
 def print_usage():
     """Print usage information."""
     print("""
-Usage: python test_sitemap_qa.py
+California Psychics Sitemap QA Testing Tool
 
-This script tests sitemap URLs for California Psychics QA environment.
+This script tests sitemap URLs for multiple CSV files with different column structures.
 
 Features:
 • Tests URLs with 301 redirects to verify Expected URLs return 200
 • Validates URLs marked for removal are properly inaccessible
 • Analyzes sitemap XML for consistency
 • Generates CSV and HTML reports
+• Supports multiple CSV files with different column structures
+
+Usage Examples:
+  python test_sitemap_qa.py                    # Test Psychics.csv (default)
+  python test_sitemap_qa.py --file Blog.csv    # Test Blog.csv
+  python test_sitemap_qa.py --file Horoscope.csv  # Test Horoscope.csv
+  python test_sitemap_qa.py --all              # Test all supported CSV files
+  python test_sitemap_qa.py --env prod         # Test in production environment
+
+Supported CSV Files:
+• Psychics.csv (columns 1, 4, 61)
+• Blog.csv (columns 1, 4, 58)
+• Horoscope.csv (columns 1, 4, 60)
 
 Output files are saved to the 'output/' directory:
 • test_results_YYYY-MM-DD.csv - Detailed test results
 • test_report_YYYY-MM-DD.html - Comprehensive report
 
 Configuration:
-• Environment: QA (qa-www.californiapsychics.com)
-• Input data: in/Psychics.csv
+• Default Environment: QA (qa-www.californiapsychics.com)
 • Timeout: 5 seconds per request
 • Retries: 3 attempts for failed requests
 
-For help or issues, check the README.md file.
+For help: python test_sitemap_qa.py --help
 """)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] in ['-h', '--help', 'help']:
-        print_usage()
-        sys.exit(0)
-
     exit_code = main()
     sys.exit(exit_code)

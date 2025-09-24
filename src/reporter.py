@@ -219,14 +219,16 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"  ⏱️  Total Time: {total_time:.1f}s")
 
         print(f"\n📁 Output Files:")
-        print(f"  CSV Results: {Config.get_results_csv_path()}")
-        print(f"  HTML Report: {Config.get_report_html_path()}")
+        csv_filename = Config.get_results_filename()
+        html_filename = Config.get_report_filename()
+        print(f"  CSV Results: output/{csv_filename}")
+        print(f"  HTML Report: output/{html_filename}")
 
         print(f"\n{'='*60}")
 
-    def save_csv_results(self, redirect_results: List[Dict], remove_results: List[Dict]) -> str:
+    def save_csv_results(self, redirect_results: List[Dict], remove_results: List[Dict], csv_file: str = None) -> str:
         """Save enhanced test results to CSV file with dual criteria."""
-        csv_path = Config.get_results_csv_path()
+        csv_path = Config.get_results_csv_path(csv_file)
 
         try:
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
@@ -327,9 +329,9 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
         return '<div class="failure-details">' + '<br>'.join(details) + '</div>' if details else 'Unknown failure'
 
     def save_html_report(self, redirect_results: List[Dict], remove_results: List[Dict],
-                        sitemap_analysis: Dict = None) -> str:
+                        sitemap_analysis: Dict = None, csv_file: str = None) -> str:
         """Save comprehensive HTML report."""
-        html_path = Config.get_report_html_path()
+        html_path = Config.get_report_html_path(csv_file)
 
         try:
             # Calculate enhanced statistics

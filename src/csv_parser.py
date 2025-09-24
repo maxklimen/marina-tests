@@ -16,6 +16,12 @@ class CSVParser:
         self.data = None
         self.redirect_urls = []
         self.remove_urls = []
+        self.column_mapping = self._get_column_mapping()
+
+    def _get_column_mapping(self):
+        """Get column mapping for the current CSV file."""
+        csv_filename = os.path.basename(self.csv_file_path)
+        return Config.get_column_mapping(csv_filename)
 
     def load_data(self) -> pd.DataFrame:
         """Load CSV data from file."""
@@ -34,15 +40,20 @@ class CSVParser:
         if self.data is None:
             self.load_data()
 
+        # Use dynamic column mapping
+        status_col = self.column_mapping['status_code']
+        original_col = self.column_mapping['original_url']
+        expected_col = self.column_mapping['expected_url']
+
         # Filter rows where Status Code is 301
         redirect_rows = self.data[
-            self.data.iloc[:, Config.STATUS_CODE_COL] == Config.TARGET_STATUS_CODE
+            self.data.iloc[:, status_col] == Config.TARGET_STATUS_CODE
         ]
 
         redirect_urls = []
         for _, row in redirect_rows.iterrows():
-            original_url = row.iloc[Config.ORIGINAL_URL_COL]
-            expected_url = row.iloc[Config.EXPECTED_URL_COL]
+            original_url = row.iloc[original_col]
+            expected_url = row.iloc[expected_col]
 
             # Skip if expected URL is marked for removal
             if str(expected_url).strip().upper() == Config.REMOVE_MARKER:
@@ -68,21 +79,26 @@ class CSVParser:
         if self.data is None:
             self.load_data()
 
+        # Use dynamic column mapping
+        status_col = self.column_mapping['status_code']
+        original_col = self.column_mapping['original_url']
+        expected_col = self.column_mapping['expected_url']
+
         # Filter rows where Expected URL is "REMOVE"
         remove_rows = self.data[
-            self.data.iloc[:, Config.EXPECTED_URL_COL].astype(str).str.strip().str.upper() == Config.REMOVE_MARKER
+            self.data.iloc[:, expected_col].astype(str).str.strip().str.upper() == Config.REMOVE_MARKER
         ]
 
         remove_urls = []
         for _, row in remove_rows.iterrows():
-            original_url = row.iloc[Config.ORIGINAL_URL_COL]
+            original_url = row.iloc[original_col]
             original_url = self._clean_url(original_url)
 
             if original_url:
                 remove_urls.append({
                     'original_url': original_url,
                     'expected_url': Config.REMOVE_MARKER,
-                    'status_code': row.iloc[Config.STATUS_CODE_COL]
+                    'status_code': row.iloc[status_col]
                 })
 
         self.remove_urls = remove_urls
