@@ -136,8 +136,8 @@ class Config:
             csv_lower = csv_file.lower()
             if 'horoscope' in csv_lower:
                 return f'{base_url}/horoscope/sitemap/'
-            elif 'blog' in csv_lower:
-                return f'{base_url}/blog/sitemap/'
+            # elif 'blog' in csv_lower:
+            #     return f'{base_url}/blog/sitemap/'  # Disabled - endpoint times out
 
         # Default to main sitemap
         return f'{base_url}/sitemap.xml'
