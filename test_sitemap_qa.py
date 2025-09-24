@@ -74,7 +74,9 @@ def run_test_for_file(csv_file, env='qa'):
     reporter = Reporter()
     parser = CSVParser(Config.get_input_file_path(csv_file))
     tester = URLTester(Config.CURRENT_ENV)
-    sitemap_handler = SitemapHandler(Config.CURRENT_ENV)
+    # Pass csv_file to sitemap handler to get the correct sitemap URL
+    sitemap_url = Config.get_sitemap_url(Config.CURRENT_ENV, csv_file)
+    sitemap_handler = SitemapHandler(Config.CURRENT_ENV, sitemap_url=sitemap_url)
 
     try:
         # Print header with file information

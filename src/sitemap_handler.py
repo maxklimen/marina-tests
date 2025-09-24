@@ -21,10 +21,10 @@ from config import Config
 class SitemapHandler:
     """Handler for sitemap XML operations."""
 
-    def __init__(self, environment: str = None):
-        """Initialize sitemap handler with environment."""
+    def __init__(self, environment: str = None, sitemap_url: str = None):
+        """Initialize sitemap handler with environment and optional sitemap URL."""
         self.environment = environment or Config.CURRENT_ENV
-        self.sitemap_url = Config.get_sitemap_url(self.environment)
+        self.sitemap_url = sitemap_url or Config.get_sitemap_url(self.environment)
         self.urls = []
         self.raw_xml = None
 

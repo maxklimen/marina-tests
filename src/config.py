@@ -77,9 +77,19 @@ class Config:
         return f'https://{domain}'
 
     @classmethod
-    def get_sitemap_url(cls, env=None):
-        """Get sitemap URL for specified environment."""
+    def get_sitemap_url(cls, env=None, csv_file=None):
+        """Get sitemap URL for specified environment and CSV file type."""
         base_url = cls.get_base_url(env)
+
+        # Determine sitemap based on CSV file type
+        if csv_file:
+            csv_lower = csv_file.lower()
+            if 'horoscope' in csv_lower:
+                return f'{base_url}/horoscope/sitemap/'
+            elif 'blog' in csv_lower:
+                return f'{base_url}/blog/sitemap/'
+
+        # Default to main sitemap
         return f'{base_url}/sitemap.xml'
 
     @classmethod
