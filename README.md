@@ -42,13 +42,36 @@ marina-tests/
 │   ├── url_tester.py         # URL validation and testing logic
 │   ├── sitemap_handler.py    # Sitemap XML fetching and analysis
 │   └── reporter.py           # Output formatting and report generation
+├── docs/
+│   ├── technical/            # Technical implementation documentation
+│   │   ├── MULTI_SITEMAP_ARCHITECTURE.md  # v2.0.0 architecture guide
+│   │   └── V2_IMPLEMENTATION_STATUS.md    # Production readiness status
+│   └── reports/              # Analysis and compliance reports
+│       ├── SITEMAP_COMPLIANCE_REPORT.md   # Executive summary
+│       └── SITEMAP_ISSUES.md              # Technical issue tracking
 ├── tests/                    # Unit tests (future enhancement)
 ├── output/                   # Generated reports and results (unique per file)
 ├── requirements.txt          # Python dependencies
 ├── test_sitemap_qa.py        # Main testing script
 ├── CLAUDE.md                 # Developer documentation
+├── CHANGELOG.md              # Release notes and version history
+├── sitemap-qa.md             # QA requirements and acceptance criteria
 └── README.md                 # This file
 ```
+
+## 📚 Documentation
+
+### Quick Reference
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history and release notes
+- **[sitemap-qa.md](sitemap-qa.md)** - QA testing requirements and criteria
+
+### Technical Documentation
+- **[Multi-Sitemap Architecture Guide](docs/technical/MULTI_SITEMAP_ARCHITECTURE.md)** - Comprehensive v2.0.0 implementation details
+- **[Implementation Status](docs/technical/V2_IMPLEMENTATION_STATUS.md)** - Production readiness assessment
+
+### Analysis Reports
+- **[Sitemap Compliance Report](docs/reports/SITEMAP_COMPLIANCE_REPORT.md)** - Executive summary of findings
+- **[Technical Issue Tracking](docs/reports/SITEMAP_ISSUES.md)** - Detailed issue status and resolutions
 
 ## 🚀 Quick Start
 
@@ -421,8 +444,8 @@ This tool has been successfully tested with:
 - **Action**: Path structure standardization needed
 
 ### 📋 For Complete Details:
-- **Executive Summary**: [SITEMAP_COMPLIANCE_REPORT.md](SITEMAP_COMPLIANCE_REPORT.md)
-- **Technical Tracking**: [SITEMAP_ISSUES.md](SITEMAP_ISSUES.md)
+- **Executive Summary**: [docs/reports/SITEMAP_COMPLIANCE_REPORT.md](docs/reports/SITEMAP_COMPLIANCE_REPORT.md)
+- **Technical Tracking**: [docs/reports/SITEMAP_ISSUES.md](docs/reports/SITEMAP_ISSUES.md)
 - **Implementation Status**: [sitemap-qa.md](sitemap-qa.md)
 
 ### ✅ Testing Tool Validation:
