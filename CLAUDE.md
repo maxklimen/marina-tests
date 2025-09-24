@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Developer guidance for Claude Code (claude.ai/code) when working with this codebase.
 
 ## Project Overview
 
-This is a QA testing repository for sitemap URL validation and redirect management for California Psychics website. The project focuses on testing URLs from CSV data files to ensure proper redirect handling and sitemap maintenance.
+QA testing framework for sitemap URL validation with multi-file support, environment isolation, and content-specific sitemap routing.
 
 ## Architecture
 
@@ -80,13 +80,12 @@ The system now supports three CSV files with different column structures:
 - Variable: `Expected URL` / `Redirect URL` - Target URLs for redirects or "REMOVE"
 
 ## Testing Workflow
-1. **Select CSV File**: Choose specific file or test all files with command-line parameters
-2. **Parse CSV**: Filter 301 status codes from selected CSV file(s)
-3. **Dynamic Column Detection**: Use appropriate column mapping for each CSV file
-4. **Test Expected URLs**: Verify each Expected/Redirect URL returns 200 in target environment
-5. **Validate Removals**: Check URLs marked "REMOVE" are inaccessible
-6. **Sitemap Comparison**: Fetch and compare actual sitemap against expected state
-7. **Generate Reports**: Create unique reports per CSV file with transparent output
+1. **File Selection**: Command-line parameters (`--file`, `--all`, `--env`)
+2. **CSV Parsing**: Dynamic column mapping based on file type
+3. **URL Testing**: HTTP requests with environment-specific URLs
+4. **Sitemap Validation**: XML parsing with content-type detection
+5. **Environment Isolation**: No fallback contamination between environments
+6. **Report Generation**: Unique timestamped output files
 
 ## Commands
 
@@ -205,32 +204,23 @@ The testing implements two-stage validation:
 - **🟡 Environment Parity**: QA cannot properly test Production behavior (ongoing)
 - **✅ Testing Value**: Tool successfully identified framework limitations vs genuine sitemap gaps
 
-### Major Achievement Summary
-The multi-sitemap architecture discovery and implementation represents a **paradigm shift** from treating all content as belonging to a single sitemap to properly understanding the distributed sitemap structure. This resolved what appeared to be a critical SEO issue and improved horoscope content visibility by **3,900%** (0% → 76.5% compliance).
+### Technical Evolution
+Framework evolved from monolithic sitemap assumption to distributed architecture support with environment isolation for accurate per-environment testing.
 
-## Session Maintenance Guidelines
+## Code Architecture
 
-### Documentation Maintenance During Coding Sessions
-- **Always update reports** after significant changes or discoveries
-- **Keep CLAUDE.md current** with new commands, features, and architecture changes
-- **Maintain version history** in CHANGELOG.md for major updates
-- **Update technical documentation** in docs/technical/ for implementation details
+### Core Components
+- **src/config.py**: Environment settings, CSV mappings, sitemap URL routing (lines 80-143)
+- **test_sitemap_qa.py**: Main entry point with CLI interface
+- **src/sitemap_handler.py**: XML parsing with environment isolation support
+- **src/url_tester.py**: HTTP testing with retry logic
+- **src/reporter.py**: Output generation (CSV/HTML)
 
-### Testing Workflow
-1. **Run comprehensive tests** after code changes: `python test_sitemap_qa.py --all`
-2. **Verify all CSV files** are working with correct sitemaps
-3. **Check output files** in `output/` directory for accuracy
-4. **Update reports** if findings change significantly
-
-### Issue Tracking
-- **Document new issues** in docs/reports/SITEMAP_ISSUES.md
-- **Update status reports** in docs/technical/V2_IMPLEMENTATION_STATUS.md
-- **Maintain executive summaries** in docs/reports/SITEMAP_COMPLIANCE_REPORT.md
-
-### Key Implementation Files
-- **src/config.py**: Multi-sitemap URL routing and column mappings (lines 80-143)
-- **test_sitemap_qa.py**: Main testing entry point with CLI arguments
-- **src/sitemap_handler.py**: Custom sitemap URL support
+### Key Implementation Details
+- **Environment Isolation**: `enable_fallback=False` in SitemapHandler (line 80)
+- **Multi-Sitemap Detection**: Content-type based routing in config.py
+- **Column Mapping**: Dynamic CSV parsing based on file type
+- **Namespace Handling**: XML parser detects sitemap namespace automatically
 
 ### Troubleshooting Checklist
 - ✅ **RESOLVED**: Environment isolation implemented - no QA→Production fallback contamination
