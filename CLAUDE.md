@@ -206,3 +206,39 @@ The testing implements two-stage validation:
 
 ### Major Achievement Summary
 The multi-sitemap architecture discovery and implementation represents a **paradigm shift** from treating all content as belonging to a single sitemap to properly understanding the distributed sitemap structure. This resolved what appeared to be a critical SEO issue and improved horoscope content visibility by **3,900%** (0% → 76.5% compliance).
+
+## Session Maintenance Guidelines
+
+### Documentation Maintenance During Coding Sessions
+- **Always update reports** after significant changes or discoveries
+- **Keep CLAUDE.md current** with new commands, features, and architecture changes
+- **Maintain version history** in CHANGELOG.md for major updates
+- **Update technical documentation** in docs/technical/ for implementation details
+
+### Testing Workflow
+1. **Run comprehensive tests** after code changes: `python test_sitemap_qa.py --all`
+2. **Verify all CSV files** are working with correct sitemaps
+3. **Check output files** in `output/` directory for accuracy
+4. **Update reports** if findings change significantly
+
+### Issue Tracking
+- **Document new issues** in docs/reports/SITEMAP_ISSUES.md
+- **Update status reports** in docs/technical/V2_IMPLEMENTATION_STATUS.md
+- **Maintain executive summaries** in docs/reports/SITEMAP_COMPLIANCE_REPORT.md
+
+### Key Implementation Files
+- **src/config.py**: Multi-sitemap URL routing and column mappings (lines 80-143)
+- **test_sitemap_qa.py**: Main testing entry point with CLI arguments
+- **src/sitemap_handler.py**: Custom sitemap URL support
+
+### Troubleshooting Checklist
+- ⚠️ **CRITICAL**: Verify horoscope content uses `/horoscope/sitemap/` not main sitemap
+- Check blog content fallback to main sitemap (blog sitemap times out)
+- Confirm psychic profiles use main sitemap with proper compliance tracking
+- Validate environment switching (qa vs prod) works correctly
+- Ensure test output shows correct sitemap URLs in logs
+
+### Known Issues to Monitor
+- **Horoscope Testing**: Must show "Fetching QA sitemap from: https://qa-www.californiapsychics.com/horoscope/sitemap/" in logs
+- **Blog Sitemap Timeout**: Blog content uses main sitemap as fallback
+- **QA/Production Parity**: 287 psychic profiles missing from QA environment

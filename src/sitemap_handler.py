@@ -21,29 +21,47 @@ from config import Config
 class SitemapHandler:
     """Handler for sitemap XML operations."""
 
-    def __init__(self, environment: str = None, sitemap_url: str = None):
-        """Initialize sitemap handler with environment and optional sitemap URL."""
+    def __init__(self, environment: str = None, sitemap_url: str = None, enable_fallback: bool = False):
+        """
+        Initialize sitemap handler with environment and optional sitemap URL.
+
+        Args:
+            environment: Target environment ('qa' or 'prod')
+            sitemap_url: Optional explicit sitemap URL
+            enable_fallback: If True, allow fallback to production when QA fails (default: False)
+                           Setting to False ensures accurate per-environment testing
+        """
         self.environment = environment or Config.CURRENT_ENV
         self.sitemap_url = sitemap_url or Config.get_sitemap_url(self.environment)
+        self.enable_fallback = enable_fallback
         self.urls = []
         self.raw_xml = None
 
     def fetch_sitemap(self) -> bool:
-        """Fetch sitemap XML from the website with fallback options."""
-        # Try QA sitemap first
-        qa_success = self._try_fetch_sitemap(self.sitemap_url, "QA")
-        if qa_success:
+        """
+        Fetch sitemap XML from the website.
+
+        If enable_fallback is True, will try production fallback when QA fails.
+        If enable_fallback is False, will only test the specified environment.
+        """
+        env_name = "QA" if "qa-" in self.sitemap_url else "Production"
+        primary_success = self._try_fetch_sitemap(self.sitemap_url, env_name)
+
+        if primary_success:
             return True
 
-        # If QA fails, try production as fallback
-        print("⚠️  QA sitemap failed, trying production fallback...")
-        prod_url = self.sitemap_url.replace('qa-www.', 'www.')
-        prod_success = self._try_fetch_sitemap(prod_url, "Production")
-        if prod_success:
-            print("ℹ️  Using production sitemap for validation")
-            return True
+        # Only attempt fallback if explicitly enabled
+        if self.enable_fallback and "qa-" in self.sitemap_url:
+            print("⚠️  QA sitemap failed, trying production fallback...")
+            prod_url = self.sitemap_url.replace('qa-www.', 'www.')
+            prod_success = self._try_fetch_sitemap(prod_url, "Production")
+            if prod_success:
+                print("ℹ️  Using production sitemap for validation")
+                return True
+            print("❌ Both QA and production sitemaps failed")
+        else:
+            print(f"❌ {env_name} sitemap failed (fallback disabled for accurate environment testing)")
 
-        print("❌ Both QA and production sitemaps failed")
         return False
 
     def _try_fetch_sitemap(self, url: str, env_name: str) -> bool:

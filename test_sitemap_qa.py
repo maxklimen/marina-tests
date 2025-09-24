@@ -76,7 +76,8 @@ def run_test_for_file(csv_file, env='qa'):
     tester = URLTester(Config.CURRENT_ENV)
     # Pass csv_file to sitemap handler to get the correct sitemap URL
     sitemap_url = Config.get_sitemap_url(Config.CURRENT_ENV, csv_file)
-    sitemap_handler = SitemapHandler(Config.CURRENT_ENV, sitemap_url=sitemap_url)
+    # Disable fallback for accurate per-environment testing
+    sitemap_handler = SitemapHandler(Config.CURRENT_ENV, sitemap_url=sitemap_url, enable_fallback=False)
 
     try:
         # Print header with file information
