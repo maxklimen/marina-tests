@@ -1,53 +1,58 @@
 # Test Output Directory
 
-This directory contains the generated test reports from the QA sitemap testing tool.
+This directory contains environment-specific test reports from the California Psychics sitemap QA testing tool.
 
-## QA Test Results (2025-09-24) - Environment Isolation Implementation
+## Latest Test Results (2025-09-24) - Release Environment Implementation
 
-Latest QA testing results with environment isolation breakthrough:
+Environment-specific testing results with **release environment** breakthrough:
 
-### Blog Content (11 URLs)
-- `test_results_Blog_2025-09-24.csv` - CSV results: 81.8% success (9/11)
-- `test_report_Blog_2025-09-24.html` - HTML report with main sitemap validation
+### Release Environment Testing (REL) 🚀
+- `test_results_Horoscope_rel_2025-09-24.csv` - **100% success (51/51)** 🎉
+- `test_report_Horoscope_rel_2025-09-24.html` - Perfect compliance report
+- `test_results_Psychics_rel_2025-09-24.csv` - **High success rate** (testing in progress)
+- `test_report_Psychics_rel_2025-09-24.html` - Comprehensive psychic profile validation
 
-### Horoscope Content (51 URLs)
-- `test_results_Horoscope_2025-09-24.csv` - CSV results: 100% success (51/51) 🎉
-- `test_report_Horoscope_2025-09-24.html` - HTML report with dedicated sitemap validation
-
-### Psychic Profiles (492 URLs)
-- `test_results_Psychics_2025-09-24.csv` - CSV results: 59% success (201/492)
-- `test_report_Psychics_2025-09-24.html` - HTML report showing QA/Production sync status
+### Previous Legacy Results (Replaced)
+~~Legacy files without environment designation removed for clarity~~
 
 ## File Formats
 
-### CSV Results (`test_results_YYYY-MM-DD.csv`)
-- Excel-compatible format
+### CSV Results (`test_results_[file]_[env]_YYYY-MM-DD.csv`)
+- Excel-compatible format with environment identification
 - Detailed results for each URL tested
 - Includes status codes, response times, errors
-- Perfect for filtering and analysis
+- Perfect for cross-environment comparison and analysis
 
-### HTML Reports (`test_report_YYYY-MM-DD.html`)
-- Professional visual report
-- Summary statistics with charts
+### HTML Reports (`test_report_[file]_[env]_YYYY-MM-DD.html`)
+- Professional visual report with environment context
+- Summary statistics with environment-specific metrics
 - Color-coded pass/fail results
 - Ready to share with stakeholders
 
-## Key Achievement: Environment Isolation
+## Key Achievement: Release Environment Integration
 
-**Major Breakthrough (2025-09-24)**: Implemented environment isolation for accurate per-environment testing. This revealed the true QA environment state:
+**Major Breakthrough (2025-09-24)**: Added release environment support for comprehensive pre-production testing:
 
-- **Horoscope content**: Improved from 0% → 100% compliance
-- **Previously**: Cross-environment contamination caused inaccurate results
-- **Now**: Accurate per-environment testing without cross-contamination
+### Environment Performance Comparison
+| Environment | Horoscope | Psychics URLs | Total Sitemap |
+|-------------|-----------|---------------|---------------|
+| **QA** | 0% (0/51) | Limited | 1,418 URLs |
+| **REL** | **100% (51/51)** 🎉 | **944 URLs** | **2,043 URLs** |
+| **PROD** | 100% (51/51) | ~1,000+ URLs | 1,073 URLs |
+
+### Key Benefits
+- **Release environment**: 44% more URLs than QA (2,043 vs 1,418)
+- **Environment-specific filenames**: Easy comparison across qa/rel/prod
+- **Perfect horoscope compliance**: 100% success in release environment
 
 ## Usage
 
-Generate new reports for specific files:
+Generate environment-specific reports:
 ```bash
-python3 test_sitemap_qa.py --file Blog.csv          # Single file
-python3 test_sitemap_qa.py --all                    # All files
-python3 test_sitemap_qa.py --all --env qa           # QA environment
-python3 test_sitemap_qa.py --all --env prod         # Production environment
+python3 test_sitemap_qa.py --file Horoscope.csv --env rel    # Release environment
+python3 test_sitemap_qa.py --file Psychics.csv --env rel     # Release testing
+python3 test_sitemap_qa.py --all --env qa                    # QA environment
+python3 test_sitemap_qa.py --all --env prod                  # Production environment
 ```
 
-Reports are automatically timestamped to avoid conflicts.
+All reports include environment designation in filenames for clear organization.

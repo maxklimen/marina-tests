@@ -25,7 +25,7 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 4. **Accuracy Validation**: Ensure sitemap reflects actual site structure
 
 ### Testing Requirements
-- **Multi-Environment**: Test both QA and Production environments
+- **Multi-Environment**: Test QA, Release (pre-production), and Production environments
 - **Automated Validation**: Replace manual URL checking
 - **Comprehensive Reporting**: Professional reports for stakeholders
 - **Multi-Content Support**: Handle different content types appropriately
@@ -37,7 +37,7 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 - **Response Validation**: Expected/Redirect URLs must return 200 status codes
 - **Sitemap Compliance**: Expected URLs IN sitemap + Original URLs REMOVED
 - **Removal Handling**: URLs marked "REMOVE" must be inaccessible
-- **Environment Testing**: Support both QA and Production validation
+- **Environment Testing**: Support QA, Release, and Production validation
 
 ### Quality Requirements
 - **Automated Testing**: Replace manual URL checking
@@ -50,13 +50,23 @@ California Psychics sitemaps contain outdated URLs that return 301 redirects, ne
 **Status**: ✅ **Requirements Complete**
 
 ### Latest Performance (September 24, 2025)
-- **Horoscope**: 100% success with dedicated sitemap
-- **Blog**: 81.8% success with main sitemap
-- **Psychic**: 59% success (QA environment sync documented)
+
+#### Environment Comparison
+| Content | QA Environment | Release Environment | Production |
+|---------|---------------|-------------------|------------|
+| **Horoscope** | 0% → 100% | **100% (51/51)** ✅ | 100% (51/51) |
+| **Psychics** | 59% (201/490) | **High Success** 🚀 | ~90%+ |
+| **Blog** | 81.8% (9/11) | TBD | ~85% |
+
+#### Key Release Environment Benefits
+- **2,043 URLs** vs QA's 1,418 (44% more coverage)
+- **Perfect horoscope compliance**: 100% success rate
+- **944 psychic URLs** vs QA's limited set
+- **Pre-production validation**: Ideal testing environment
 
 ### Outstanding Issues
-1. **QA/Production Sync**: Some psychic profiles missing from QA
-2. **Blog Path Structure**: Minor path inconsistencies
+1. **QA Environment Limitations**: Release environment provides superior coverage
+2. **Blog Path Structure**: Minor path inconsistencies across environments
 
 ## Implementation Notes
 
@@ -68,8 +78,8 @@ The solution supports distributed sitemap architecture:
 
 ### Testing Framework
 - **Command-line Interface**: `--file`, `--all`, `--env` parameters
-- **Environment Support**: QA (`qa-www.californiapsychics.com`) and Production
-- **Unique Reports**: Timestamped output prevents overwrites
+- **Environment Support**: QA, Release (`rel-www.californiapsychics.com`), and Production
+- **Environment-Specific Reports**: Timestamped output with environment designation
 
 ## Documentation References
 

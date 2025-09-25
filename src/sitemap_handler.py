@@ -165,8 +165,9 @@ class SitemapHandler:
             normalized = normalized[:-1]
 
         # Normalize environment prefixes for comparison
-        # Convert qa-www back to www for comparison since test data uses production URLs
+        # Convert environment prefixes back to www for comparison since test data uses production URLs
         normalized = normalized.replace('qa-www.californiapsychics.com', 'www.californiapsychics.com')
+        normalized = normalized.replace('rel-www.californiapsychics.com', 'www.californiapsychics.com')
 
         # Convert to lowercase for case-insensitive comparison
         normalized = normalized.lower()

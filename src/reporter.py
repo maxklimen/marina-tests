@@ -16,9 +16,10 @@ init(autoreset=True)
 class Reporter:
     """Reporter class for generating test output and reports."""
 
-    def __init__(self, enable_colors: bool = None):
-        """Initialize reporter with color settings."""
+    def __init__(self, enable_colors: bool = None, environment: str = None):
+        """Initialize reporter with color settings and environment."""
         self.enable_colors = enable_colors if enable_colors is not None else Config.ENABLE_COLORS
+        self.environment = environment or Config.CURRENT_ENV
         self.test_results = []
         self.summary_stats = {}
 
@@ -144,7 +145,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             return None
 
     def print_summary(self, redirect_results: List[Dict], remove_results: List[Dict],
-                     sitemap_analysis: Dict = None):
+                     sitemap_analysis: Dict = None, csv_file: str = None):
         """Print comprehensive test summary with dual criteria."""
         print(f"\n{'='*60}")
         print("📊 TEST SUMMARY")
@@ -219,8 +220,8 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             print(f"  ⏱️  Total Time: {total_time:.1f}s")
 
         print(f"\n📁 Output Files:")
-        csv_filename = Config.get_results_filename()
-        html_filename = Config.get_report_filename()
+        csv_filename = Config.get_results_filename(csv_file, self.environment)
+        html_filename = Config.get_report_filename(csv_file, self.environment)
         print(f"  CSV Results: output/{csv_filename}")
         print(f"  HTML Report: output/{html_filename}")
 
@@ -228,7 +229,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
     def save_csv_results(self, redirect_results: List[Dict], remove_results: List[Dict], csv_file: str = None) -> str:
         """Save enhanced test results to CSV file with dual criteria."""
-        csv_path = Config.get_results_csv_path(csv_file)
+        csv_path = Config.get_results_csv_path(csv_file, self.environment)
 
         try:
             with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
@@ -331,7 +332,7 @@ Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
     def save_html_report(self, redirect_results: List[Dict], remove_results: List[Dict],
                         sitemap_analysis: Dict = None, csv_file: str = None) -> str:
         """Save comprehensive HTML report."""
-        html_path = Config.get_report_html_path(csv_file)
+        html_path = Config.get_report_html_path(csv_file, self.environment)
 
         try:
             # Calculate enhanced statistics

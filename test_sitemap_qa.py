@@ -45,7 +45,7 @@ Examples:
                       help='Test all CSV files in the input directory')
 
     parser.add_argument('--env', '-e',
-                       choices=['qa', 'prod'],
+                       choices=['qa', 'rel', 'prod'],
                        default='qa',
                        help='Environment to test (default: qa)')
 
@@ -71,7 +71,7 @@ def run_test_for_file(csv_file, env='qa'):
     Config.CURRENT_ENV = env
 
     # Initialize components
-    reporter = Reporter()
+    reporter = Reporter(environment=env)
     parser = CSVParser(Config.get_input_file_path(csv_file))
     tester = URLTester(Config.CURRENT_ENV)
     # Pass csv_file to sitemap handler to get the correct sitemap URL
@@ -230,7 +230,7 @@ def run_test_for_file(csv_file, env='qa'):
         html_path = reporter.save_html_report(redirect_results, remove_results, sitemap_analysis, csv_file)
 
         # Print summary
-        reporter.print_summary(redirect_results, remove_results, sitemap_analysis)
+        reporter.print_summary(redirect_results, remove_results, sitemap_analysis, csv_file)
 
         # Calculate and display total execution time
         total_time = time.time() - start_time

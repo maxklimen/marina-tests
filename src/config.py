@@ -11,6 +11,7 @@ class Config:
     # Environment settings
     ENVIRONMENTS = {
         'qa': 'qa-www.californiapsychics.com',
+        'rel': 'rel-www.californiapsychics.com',
         'prod': 'www.californiapsychics.com'
     }
 
@@ -166,27 +167,29 @@ class Config:
         return os.path.join(cls.OUTPUT_DIR, filename)
 
     @classmethod
-    def get_results_csv_path(cls, csv_file=None):
+    def get_results_csv_path(cls, csv_file=None, env=None):
         """Get full path to results CSV file."""
-        filename = cls.get_results_filename(csv_file)
+        filename = cls.get_results_filename(csv_file, env)
         return cls.get_output_file_path(filename)
 
     @classmethod
-    def get_report_html_path(cls, csv_file=None):
+    def get_report_html_path(cls, csv_file=None, env=None):
         """Get full path to HTML report file."""
-        filename = cls.get_report_filename(csv_file)
+        filename = cls.get_report_filename(csv_file, env)
         return cls.get_output_file_path(filename)
 
     @classmethod
-    def get_results_filename(cls, csv_file=None):
-        """Get results CSV filename with CSV file identifier."""
+    def get_results_filename(cls, csv_file=None, env=None):
+        """Get results CSV filename with CSV file identifier and environment."""
         csv_file = csv_file or cls.CSV_FILE
+        env = env or cls.CURRENT_ENV
         csv_name = csv_file.replace('.csv', '')
-        return f'test_results_{csv_name}_{cls.TIMESTAMP}.csv'
+        return f'test_results_{csv_name}_{env}_{cls.TIMESTAMP}.csv'
 
     @classmethod
-    def get_report_filename(cls, csv_file=None):
-        """Get HTML report filename with CSV file identifier."""
+    def get_report_filename(cls, csv_file=None, env=None):
+        """Get HTML report filename with CSV file identifier and environment."""
         csv_file = csv_file or cls.CSV_FILE
+        env = env or cls.CURRENT_ENV
         csv_name = csv_file.replace('.csv', '')
-        return f'test_report_{csv_name}_{cls.TIMESTAMP}.html'
+        return f'test_report_{csv_name}_{env}_{cls.TIMESTAMP}.html'
