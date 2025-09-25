@@ -20,9 +20,9 @@ venv.bak/
 .DS_Store
 Thumbs.db
 
-# Output files - sample reports included, but exclude future runs
-output/test_results_*.csv
-output/test_report_*.html
+# Output files - now tracked by default for stakeholder access
+# output/test_results_*.csv
+# output/test_report_*.html
 
 # Temporary files
 *.tmp
